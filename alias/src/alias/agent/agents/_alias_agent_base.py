@@ -17,9 +17,7 @@ Alias Agent 基类 - 所有 Agent 的父类
 例如：
   AliasAgentBase（父类）
       ├── MetaPlanner（子类）
-      ├── BrowserAgent（子类）
-      ├── DeepResearchAgent（子类）
-      └── DataScienceAgent（子类）
+      └── BrowserAgent（子类）
 
 【ReActAgent 是什么？】
 ReActAgent 是 AgentScope 框架提供的基础 Agent 类。

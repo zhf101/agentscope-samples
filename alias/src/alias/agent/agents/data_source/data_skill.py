@@ -19,7 +19,7 @@ Data Skill - 数据技能管理
 【技能的作用】
 
 ┌─────────────────────────────────────────────────────────────────────────────┐
-│                        DataScienceAgent 工作流程                              │
+│                        DataSkillManager 工作流程                              │
 │                                                                              │
 │  用户任务："分析销售数据"                                                     │
 │         │                                                                    │
@@ -83,7 +83,6 @@ from loguru import logger
 
 from agentscope.tool._types import AgentSkill  # Agent 技能基类
 
-from alias.agent.agents.ds_agent_utils.utils import get_prompt_from_file
 from alias.agent.agents.data_source._typing import SourceType
 
 
@@ -201,9 +200,8 @@ class DataSkillManager:
                     )
 
                 # 读取技能文件内容
-                skill_content = get_prompt_from_file(
-                    skill["dir"],
-                    return_json=False,
+                skill_content = Path(skill["dir"]).read_text(
+                    encoding="utf-8",
                 )
                 if skill_content:
                     selected_skills.append(skill_content)

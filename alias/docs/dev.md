@@ -27,10 +27,10 @@ pip install -e .
 cp .env.example .env
 
 # 编辑 .env 文件，至少配置以下关键变量：
-# DASHSCOPE_API_KEY=your_dashscope_api_key_here  # 必需：模型 API
-# TAVILY_API_KEY=your_tavily_api_key_here        # 必需：搜索功能
-# OPENAI_BASE_URL=http://localhost:8317/v1       # 可选：自定义模型端点
-# OPENAI_API_KEY=your-api-key-here               # 可选：自定义模型密钥
+# OPENAI_API_KEY=your_api_key_here               # 必需：模型 API
+# OPENAI_BASE_URL=http://localhost:8317/v1       # 必需：模型端点
+# OPENAI_MODEL_NAME=gpt-5.3-codex                # 必需：模型名称
+# TAVILY_API_KEY=your_tavily_api_key_here        # 可选：搜索功能
 
 # 4. （可选）启动沙箱服务器（用于代码执行）
 # 在另一个终端运行：
@@ -42,17 +42,6 @@ alias_agent run --mode general --task "分析 Meta 公司 2025 年 Q1 的股票�
 # 其他模式示例：
 # 浏览器模式
 alias_agent run --mode browser --task "搜索最新的 5 篇关于 browser-use agent 的研究论文"
-
-# 深度研究模式
-alias_agent run --mode dr --task "研究 AI 对医疗行业的影响"
-
-# 数据科学模式（需要数据文件）
-alias_agent run --mode ds \
-  --task "分析 incident_records.csv 中各类别的事件分布" \
-  --datasource ./docs/data/incident_records.csv
-
-# 金融分析模式
-alias_agent run --mode finance --task "分析特斯拉 2024 年 Q4 的财务表现"
 
 # 自动模式（智能路由）
 alias_agent run --mode auto --task "帮我预订明天去上海的机票"
@@ -91,7 +80,9 @@ cp .env.example .env
 # FIRST_SUPERUSER_EMAIL=alias@agentscope.com
 # FIRST_SUPERUSER_USERNAME=alias
 # FIRST_SUPERUSER_PASSWORD=alias
-# DASHSCOPE_API_KEY=your_key
+# OPENAI_API_KEY=your_key
+# OPENAI_BASE_URL=http://localhost:8317/v1
+# OPENAI_MODEL_NAME=gpt-5.3-codex
 # TAVILY_API_KEY=your_key
 
 # 4. 启动 Redis（必需）
@@ -102,7 +93,9 @@ runtime-sandbox-server --extension src/alias/runtime/alias_sandbox/alias_sandbox
 
 # 6. 启动后端服务器（在新终端）
 # 先导出 API Keys
-export DASHSCOPE_API_KEY=your_key
+export OPENAI_API_KEY=your_key
+export OPENAI_BASE_URL=http://localhost:8317/v1
+export OPENAI_MODEL_NAME=gpt-5.3-codex
 export TAVILY_API_KEY=your_key
 
 python -m uvicorn alias.server.main:app --host 0.0.0.0 --port 8000 --reload
@@ -265,8 +258,8 @@ USER_PROFILING_REDIS_SERVER=localhost
 USER_PROFILING_REDIS_PORT=6379
 QDRANT_HOST=localhost
 QDRANT_PORT=6333
-DASHSCOPE_EMBEDDER=text-embedding-v4
-DASHSCOPE_MODEL_4_MEMORY=qwen3-max
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
+OPENAI_MODEL_NAME=gpt-5.3-codex
 USER_PROFILING_BASE_URL=http://localhost:6382
 USER_PROFILING_SERVICE_PORT=6382
 
@@ -373,7 +366,7 @@ redis-cli ping  # 应返回 PONG
 
 ```bash
 # 检查环境变量
-echo $DASHSCOPE_API_KEY
+echo $OPENAI_API_KEY
 echo $TAVILY_API_KEY
 
 # 或在 .env 文件中配置
@@ -386,7 +379,7 @@ cat .env | grep API_KEY
 
 ```bash
 1. pip install -e .
-2. 配置 .env（最少配置 DASHSCOPE_API_KEY 和 TAVILY_API_KEY）
+2. 配置 .env（最少配置 OPENAI_API_KEY 和 TAVILY_API_KEY）
 3. alias_agent run --mode general --task "你好，介绍一下你自己"
 ```
 

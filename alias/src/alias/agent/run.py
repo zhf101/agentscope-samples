@@ -32,11 +32,11 @@ Agent = 智能代理
 └──────────┬──────────┬──────────┬──────────┬─────────────────┘
            │          │          │          │
            ▼          ▼          ▼          ▼
-    ┌──────────┐ ┌──────────┐ ┌──────────┐ ┌──────────┐
-    │ Browser  │ │ Deep     │ │ Data     │ │ Finance  │
-    │ Agent    │ │ Research │ │ Science  │ │ Agent    │
-    │          │ │ Agent    │ │ Agent    │ │          │
-    └──────────┘ └──────────┘ └──────────┘ └──────────┘
+    ┌──────────┐ ┌──────────┐
+    │ Browser  │ │ General  │
+    │ Agent    │ │ Workers  │
+    │          │ │          │
+    └──────────┘ └──────────┘
 
 【学习要点】
 1. 环境变量配置（os.environ）
@@ -91,9 +91,7 @@ from agentscope_runtime.sandbox.box.sandbox import Sandbox
 # ------------------------------------------------------------------------------
 from alias.agent.agents import (
     BrowserAgent,      # 浏览器 Agent
-    DeepResearchAgent, # 深度研究 Agent
     MetaPlanner,       # 元规划器 Agent
-    init_dr_toolkit,   # 初始化深度研究工具包
 )
 
 from alias.agent.agents.meta_planner_utils._worker_manager import share_tools
@@ -107,9 +105,6 @@ from alias.agent.tools import AliasToolkit
 
 from alias.agent.utils.constants import (
     BROWSER_AGENT_DESCRIPTION,        # 浏览器 Agent 的描述
-    DEFAULT_DEEP_RESEARCH_AGENT_NAME, # 默认深度研究 Agent 名称
-    DEEPRESEARCH_AGENT_DESCRIPTION,   # 深度研究 Agent 的描述
-    DS_AGENT_DESCRIPTION,             # 数据科学 Agent 的描述
 )
 
 from alias.agent.utils.prepare_data_source import (
@@ -125,11 +120,6 @@ from alias.agent.memory.longterm_memory import AliasLongTermMemory
 
 from alias.server.clients.memory_client import MemoryClient
 # 记忆服务的客户端
-
-from alias.agent.agents._data_science_agent import (
-    DataScienceAgent,  # 数据科学 Agent
-    init_ds_toolkit,   # 初始化数据科学工具包
-)
 
 from alias.agent.utils.llm_call_manager import (
     LLMCallManager,  # LLM 调用管理器
@@ -291,14 +281,6 @@ async def arun_meta_planner(
     )
     logger.info(f"Init browser toolkit with backend: {browser_backend}")
 
-    # 初始化深度研究工具包
-    # init_dr_toolkit 会添加搜索、提取等研究相关工具
-    deep_research_toolkit = init_dr_toolkit(worker_full_toolkit)
-
-    # 初始化数据科学工具包
-    # init_ds_toolkit 会添加数据分析、可视化等工具
-    ds_toolkit = init_ds_toolkit(worker_full_toolkit)
-
     # -------------------------------------------------------------------------
     # 初始化数据源管理器
     # -------------------------------------------------------------------------
@@ -321,8 +303,6 @@ async def arun_meta_planner(
         data_manager,
         worker_full_toolkit,
         browser_toolkit,
-        deep_research_toolkit,
-        ds_toolkit,
     )
 
     # -------------------------------------------------------------------------
@@ -416,46 +396,6 @@ async def arun_meta_planner(
         )
         
         # ---------------------------------------------------------------------
-        # 创建并注册深度研究 Agent
-        # ---------------------------------------------------------------------
-        dr_agent = DeepResearchAgent(
-            name=DEFAULT_DEEP_RESEARCH_AGENT_NAME,
-            model=model,
-            formatter=formatter,
-            memory=InMemoryMemory(),
-            toolkit=deep_research_toolkit,
-            session_service=session_service,
-            agent_working_dir="/workspace",
-            max_depth=2,      # 研究的最大深度
-            enforce_mode="auto",  # 执行模式
-        )
-        meta_planner.worker_manager.register_worker(
-            dr_agent,
-            description=DEEPRESEARCH_AGENT_DESCRIPTION,
-            worker_type="built-in",
-        )
-        
-        # ---------------------------------------------------------------------
-        # 创建并注册数据科学 Agent
-        # ---------------------------------------------------------------------
-        ds_agent = DataScienceAgent(
-            name="Data_Science_Agent",
-            model=model,
-            formatter=formatter,
-            memory=InMemoryMemory(),
-            toolkit=ds_toolkit,
-            data_manager=data_manager,  # 数据管理器
-            sys_prompt=data_manager.get_data_skills(),  # 系统提示词
-            max_iters=30,
-            session_service=session_service,
-        )
-        meta_planner.worker_manager.register_worker(
-            ds_agent,
-            description=DS_AGENT_DESCRIPTION,
-            worker_type="built-in",
-        )
-
-        # ---------------------------------------------------------------------
         # 启动元规划器
         # ---------------------------------------------------------------------
         # meta_planner() 调用元规划器开始执行任务
@@ -479,304 +419,7 @@ async def arun_meta_planner(
 
 
 # ==============================================================================
-# 第四部分：深度研究 Agent 运行函数
-# ==============================================================================
-async def arun_deepresearch_agent(
-    session_service: SessionService,  # type: ignore[valid-type]
-    sandbox: Sandbox = None,
-    enforce_mode: Literal["general", "finance", "auto"] = "auto",
-):
-    """
-    运行深度研究 Agent。
-    
-    【深度研究 Agent 做什么？】
-    专为研究分析任务设计：
-    - 网络搜索
-    - 信息提取
-    - 报告生成
-    
-    【参数说明】
-    Args:
-        session_service: 会话服务
-        sandbox: 沙盒环境
-        enforce_mode: 执行模式
-            - "general": 通用研究
-            - "finance": 金融研究
-            - "auto": 自动选择
-    """
-    # -------------------------------------------------------------------------
-    # 初始化全局工具包
-    # -------------------------------------------------------------------------
-    global_toolkit = AliasToolkit(sandbox, add_all=True)
-    await add_tools(global_toolkit)
-    
-    # -------------------------------------------------------------------------
-    # 创建 Worker 工具包并共享指定工具
-    # -------------------------------------------------------------------------
-    worker_toolkit = AliasToolkit(sandbox)
-    
-    # 获取模型配置
-    model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
-    
-    # 定义要共享的工具列表
-    # 这些工具从 global_toolkit 共享到 worker_toolkit
-    test_tool_list = [
-        "tavily_search",      # 网络搜索
-        "tavily_extract",     # 网页内容提取
-        "write_file",         # 写文件
-        "create_directory",   # 创建目录
-        "list_directory",     # 列出目录内容
-        "read_file",          # 读文件
-        "run_shell_command",  # 执行 shell 命令
-    ]
-    share_tools(global_toolkit, worker_toolkit, test_tool_list)
-
-    # -------------------------------------------------------------------------
-    # 初始化 LLM 调用管理器和数据源
-    # -------------------------------------------------------------------------
-    llm_call_manager = LLMCallManager(
-        base_model_name=MODEL_CONFIG_NAME,
-        vl_model_name=VL_MODEL_NAME,
-        model_formatter_mapping=MODEL_FORMATTER_MAPPING,
-    )
-    await prepare_data_sources(
-        session_service,
-        sandbox,
-        worker_toolkit,
-        llm_call_manager,
-    )
-
-    # -------------------------------------------------------------------------
-    # 创建并运行深度研究 Agent
-    # -------------------------------------------------------------------------
-    worker_agent = DeepResearchAgent(
-        name="Deep_Research_Agent",
-        model=model,
-        formatter=formatter,
-        memory=InMemoryMemory(),
-        toolkit=worker_toolkit,
-        session_service=session_service,
-        agent_working_dir="/workspace",
-        max_depth=2,
-        enforce_mode=enforce_mode,
-    )
-    
-    try:
-        await worker_agent()
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        # 用户中断（Ctrl+C）或任务取消
-        logger.info("Deep Research Agent execution interrupted by user")
-        raise  # 重新抛出，让上层处理
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        logger.error(traceback.format_exc())
-        raise e from None
-    finally:
-        # 清理 MCP 客户端
-        try:
-            await global_toolkit.close_mcp_clients()
-        except (RuntimeError, asyncio.CancelledError) as e:
-            # 事件循环可能已关闭
-            if "Event loop is closed" in str(e) or isinstance(
-                e,
-                asyncio.CancelledError,
-            ):
-                logger.info(f"Skipping MCP client cleanup: {e}")
-            else:
-                raise
-        except Exception as e:
-            logger.warning(f"Error during MCP client cleanup: {e}")
-
-
-# ==============================================================================
-# 第五部分：金融 Agent 运行函数
-# ==============================================================================
-async def arun_finance_agent(
-    session_service: SessionService,  # type: ignore[valid-type]
-    sandbox: Sandbox = None,
-):
-    """
-    运行金融分析 Agent。
-    
-    【金融 Agent 做什么？】
-    专为金融分析任务设计：
-    - 股票行情查询
-    - 财务数据分析
-    - 投资建议生成
-    """
-    # -------------------------------------------------------------------------
-    # 初始化工具包
-    # -------------------------------------------------------------------------
-    global_toolkit = AliasToolkit(sandbox, add_all=True)
-    await add_tools(global_toolkit)
-    worker_toolkit = AliasToolkit(sandbox)
-    
-    model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
-    
-    # 定义金融分析所需的工具
-    test_tool_list = [
-        "tavily_search",
-        "tavily_extract",
-        "write_file",
-        "create_directory",
-        "list_directory",
-        "read_file",
-        "run_shell_command",
-        "SearchHotTopic",        # 热点搜索
-        # "SearchFinancialNews",   # 财经新闻搜索
-        "searchRealtimeAiAnalysis",  # AI 分析搜索
-        "tdx_wenda_quotes",      # 通达信问答行情
-        "tdx_PBHQInfo_quotes",   # 通达信板块行情
-    ]
-    share_tools(global_toolkit, worker_toolkit, test_tool_list)
-    
-    # 创建金融工具组
-    worker_toolkit.create_tool_group(
-        group_name="finance",
-        description="Finance Analysis tools",
-        active=True,
-    )
-
-    # -------------------------------------------------------------------------
-    # 准备数据源
-    # -------------------------------------------------------------------------
-    llm_call_manager = LLMCallManager(
-        base_model_name=MODEL_CONFIG_NAME,
-        vl_model_name=VL_MODEL_NAME,
-        model_formatter_mapping=MODEL_FORMATTER_MAPPING,
-    )
-    await prepare_data_sources(
-        session_service,
-        sandbox,
-        worker_toolkit,
-        llm_call_manager,
-    )
-
-    # -------------------------------------------------------------------------
-    # 创建并运行金融 Agent
-    # -------------------------------------------------------------------------
-    # 金融 Agent 复用 DeepResearchAgent，但使用 "finance" 模式
-    worker_agent = DeepResearchAgent(
-        name="Deep_Research_Agent",
-        model=model,
-        formatter=formatter,
-        memory=InMemoryMemory(),
-        toolkit=worker_toolkit,
-        session_service=session_service,
-        agent_working_dir="/workspace",
-        max_depth=2,
-        enforce_mode="finance",  # 使用金融模式
-    )
-    
-    try:
-        await worker_agent()
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        logger.info("Deep Agent execution interrupted by user")
-        raise
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        logger.error(traceback.format_exc())
-        raise e from None
-    finally:
-        try:
-            await global_toolkit.close_mcp_clients()
-        except (RuntimeError, asyncio.CancelledError) as e:
-            if "Event loop is closed" in str(e) or isinstance(
-                e,
-                asyncio.CancelledError,
-            ):
-                logger.info(f"Skipping MCP client cleanup: {e}")
-            else:
-                raise
-        except Exception as e:
-            logger.warning(f"Error during MCP client cleanup: {e}")
-
-
-# ==============================================================================
-# 第六部分：数据科学 Agent 运行函数
-# ==============================================================================
-async def arun_datascience_agent(
-    session_service: SessionService,  # type: ignore[valid-type]
-    sandbox: Sandbox = None,
-):
-    """
-    运行数据科学 Agent。
-    
-    【数据科学 Agent 做什么？】
-    专为数据分析任务设计：
-    - 数据清洗
-    - 统计分析
-    - 可视化
-    - 机器学习
-    """
-    # -------------------------------------------------------------------------
-    # 初始化工具包
-    # -------------------------------------------------------------------------
-    model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
-
-    global_toolkit = AliasToolkit(sandbox, add_all=True)
-    # 初始化数据科学专用工具包
-    worker_toolkit = init_ds_toolkit(global_toolkit)
-    
-    # -------------------------------------------------------------------------
-    # 准备数据管理器
-    # -------------------------------------------------------------------------
-    llm_call_manager = LLMCallManager(
-        base_model_name=MODEL_CONFIG_NAME,
-        vl_model_name=VL_MODEL_NAME,
-        model_formatter_mapping=MODEL_FORMATTER_MAPPING,
-    )
-    data_manager = await prepare_data_sources(
-        session_service=session_service,
-        sandbox=sandbox,
-        binded_toolkit=worker_toolkit,
-        llm_call_manager=llm_call_manager,
-    )
-
-    try:
-        # ---------------------------------------------------------------------
-        # 创建数据科学 Agent
-        # ---------------------------------------------------------------------
-        worker_agent = DataScienceAgent(
-            name="Data_Science_Agent",
-            model=model,
-            formatter=formatter,
-            memory=InMemoryMemory(),
-            toolkit=worker_toolkit,
-            data_manager=data_manager,
-            # 根据数据源动态生成技能描述
-            sys_prompt=data_manager.get_data_skills(),
-            max_iters=30,
-            session_service=session_service,
-        )
-        await worker_agent()
-        
-    except (KeyboardInterrupt, asyncio.CancelledError):
-        logger.info("Data Science Agent execution interrupted by user")
-        raise
-    except Exception as e:
-        logger.error(f"Error: {e}")
-        logger.error(traceback.format_exc())
-        raise e from None
-    finally:
-        # 清理资源
-        try:
-            await global_toolkit.close_mcp_clients()
-            await worker_toolkit.close_mcp_clients()
-        except (RuntimeError, asyncio.CancelledError) as e:
-            if "Event loop is closed" in str(e) or isinstance(
-                e,
-                asyncio.CancelledError,
-            ):
-                logger.info(f"Skipping MCP client cleanup: {e}")
-            else:
-                raise
-        except Exception as e:
-            logger.warning(f"Error during MCP client cleanup: {e}")
-
-
-# ==============================================================================
-# 第七部分：浏览器 Agent 运行函数
+# 第四部分：浏览器 Agent 运行函数
 # ==============================================================================
 async def arun_browseruse_agent(
     session_service: SessionService,  # type: ignore[valid-type]
@@ -872,24 +515,15 @@ async def arun_agents(
         sandbox: 沙盒环境
     
     【聊天模式】
-    - "dr": 深度研究模式
     - "browser": 浏览器模式
-    - "ds": 数据科学模式
-    - "finance": 金融模式
     - "general": 通用模式（默认）
     """
     # 从会话中获取聊天模式
     chat_mode = session_service.session_entity.chat_mode
     
     # 根据模式选择对应的 Agent
-    if chat_mode == "dr":
-        await arun_deepresearch_agent(session_service, sandbox)
-    elif chat_mode == "browser":
+    if chat_mode == "browser":
         await arun_browseruse_agent(session_service, sandbox)
-    elif chat_mode == "ds":
-        await arun_datascience_agent(session_service, sandbox)
-    elif chat_mode == "finance":
-        await arun_finance_agent(session_service, sandbox)
     else:
         # 未知模式或 "general" 模式
         if chat_mode != "general":

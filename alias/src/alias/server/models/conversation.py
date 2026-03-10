@@ -67,7 +67,7 @@ class ConversationBase(SQLModel):
         nullable=False,
         ondelete="CASCADE",
     )
-    # 会话模式（general/dr/browser/ds/finance）
+    # 会话模式（general/browser）
     chat_mode: Optional[ChatMode] = ChatMode.GENERAL
     # 绑定的沙盒 ID（用于隔离执行环境）
     sandbox_id: str

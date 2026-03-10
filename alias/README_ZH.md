@@ -30,14 +30,14 @@
 
 *Alias-Agent*（简称 *Alias*）是一个基于 [AgentScope](https://github.com/agentscope-ai/agentscope) 和 [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/) 构建的、由大语言模型驱动的智能体，旨在作为通用智能助手响应用户查询。Alias 擅长分解复杂问题、构建解决路径，并应用合适的策略来处理多样化的现实世界任务。
 
-Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用（General）模式`、`浏览器使用（Browser Use）模式`、`深度研究（Deep Research）模式`、`金融分析（Financial Analysis）模式` 和 `数据科学（Data Science）模式`。在不同运行模式间切换时，Alias 配备了定制化的指令、专业工具集以及协调各类专家智能体的能力。这使得 Alias 能够更好地适应不同下游任务的具体需求。例如，在处理金融分析时，Alias 采用可追溯的推理链并生成可解释的结果，以增强用户对其决策的信任，同时优化报告可视化效果；在解决数据科学任务时，Alias 可以访问用户关联的数据库，并旨在促进高效的数据分析、处理和预测。
+Alias 采用精简的多模式机制，专注于 `通用（General）模式` 与 `浏览器使用（Browser Use）模式`。它保留了强大的任务分解与路径规划能力，同时提供专用浏览器智能体完成网页交互任务。
 
 我们的目标是让 Alias 成为一个开箱即用的解决方案，用户可以轻松部署以应对各种任务，并得到基于 AgentScope 生态系统的完整智能体开发、测试和部署流程的支持。除了作为一个即用型智能体，我们还希望 Alias 成为一个基础模板，能够适应多样化场景。我们鼓励开发者在工具、提示词和智能体层面扩展和定制 Alias，以满足特定需求。
 
 我们欢迎更多开发者加入社区，共同推动持续创新。
 
 ## 📢 最新动态
-- **[2025-12]** 提供五种运行模式：通用（General）模式、浏览器使用（Browser Use）模式、深度研究（Deep Research）模式、金融分析（Financial Analysis）模式和数据科学（Data Science）模式。
+- **[2025-12]** 提供两种运行模式：通用（General）模式、浏览器使用（Browser Use）模式。
 
 - **[2025-12]** 记忆系统升级：提供用于持久化工具调用追踪的 Tool Memory 服务，以及用于个性化用户体验的 User Profiling 服务。
 
@@ -50,19 +50,14 @@ Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用
 
 ### 🤖 适用于多样化场景的多运行模式
 
-提供五种运行模式以应对多样化的现实世界任务：
+提供两种运行模式以应对多样化的现实世界任务：
 
-- **通用（General）模式**：元规划器（Meta Planner），能够根据任务上下文在简单任务、规划执行、浏览器使用、深度研究和数据科学模式之间自动切换。
-- **浏览器使用（Browser Use）模式**：具备多模态能力的增强型Browser Use智能体。
-- **深度研究（Deep Research）模式**：采用树状结构问题/假设探索并具备以用户为中心特性的深度研究智能体。
-- **金融分析（Financial Analysis）模式**: 基于假设驱动的金融分析智能体。
-- **数据科学（Data Science）模式**：专用于数据科学工作流（如机器学习、数值计算和探索性数据分析）的智能体。
+- **通用（General）模式**：元规划器（Meta Planner），能够根据任务上下文进行规划与执行调度。
+- **浏览器使用（Browser Use）模式**：用于网页交互任务的浏览器智能体。
 
 #### 通用（General）模式
 
-通用模式以元规划器（Meta Planner）为特色，通过自动模式切换和全面的中断支持来编排任务执行。Meta Planner根据上下文智能地将任务路由到合适的专业智能体，同时在整个执行生命周期中保持稳健的状态保存。这使得在不同运行模式（如深度研究和数据科学）之间能够实现无缝切换，并确保即使在任务被中断或重定向时也能保持连续性。
-
-通用模式还提供了一个开箱即用的、特定于 AgentScope 的问答智能体（[更多详情](docs/qa_agent.md)），预先配置了高频的 AgentScope 相关问答对。通过集成 RAG 和 GitHub MCP 工具，问答智能体可以动态检索最新的源代码结构、官方教程和社区讨论，并结合从私有知识库中灵活匹配的相关信息，以提供准确的答案。
+通用模式以元规划器（Meta Planner）为特色，通过规划与执行调度来编排任务执行，并在整个执行生命周期中保持稳健的状态保存。
 
 #### 浏览器使用（Browser Use）模式
 <p align="center">
@@ -74,50 +69,9 @@ Alias 采用多模式运行机制，实现灵活的任务执行，包括 `通用
   />
 </p>
 
-浏览器使用（Browser Use）模式扩展了原Browser Use智能体，使其具备全面的多模态能力，能够对视觉内容进行细粒度理解并与网页元素进行智能交互。该智能体具备高级的图像理解能力，可以从图表、图形和视觉内容中提取语义信息，包括坐标轴标签、趋势和异常值。视频理解能力使得智能体能够提取视频内容并进行推理，而自动表格填写和智能文件下载工具则简化了表单交互和文档管理。
+浏览器使用（Browser Use）模式专注于可靠的网页交互与动态子任务管理，以完成复杂的多步骤浏览任务。
 
 为了处理网页浏览的动态特性，Browser Use模式实现了复杂的动态子任务管理。系统会在网页发生变化时自动更新子任务，以适应新的内容、弹窗或导航事件。这确保了即使浏览环境发生变化，智能体也能保持上下文并继续执行任务，使其对于需要持续关注和适应的复杂多步骤网页交互特别有效。
-
-#### 深度研究（Deep Research）模式
-<p align="center">
-  <img
-    src="assets/deep_research.png"
-    alt="深度研究模式"
-    width="600"
-    height="auto"
-  />
-</p>
-
-深度研究（Deep Research）模式引入了以用户为中心（user-centric）的增强功能，将研究任务转变为协作、透明的过程。对于研究型问题，该智能体采用预搜索模块，在生成后续问题之前收集专业、详细的信息，确保提出的问题更有价值且信息充分。这种方法通过将问题建立在全面的背景知识之上，显著提高了研究交互的质量。
-
-该模式还采用了树状结构的研究流程，通过不断深入的信息收集来驱动研究。用户还可以动态中断深度研究过程并引导研究方向。统一的执行路径提供了一个具有可配置提示词、标准操作程序和工具集的统一代码库，使得深度研究智能体能够适应不同领域，同时保持一致的、可扩展的架构。
-
- #### 金融分析（Financial Analysis）模式 ([详细文档](docs/financial_analysis.md))
-
-<p align="center">
-  <img
-    src="docs/figures/finance_overview.png"
-    alt="金融分析模式"
-    width="600"
-    height="auto"
-  />
-</p>
-
-在金融分析场景中，复杂的推理和可追溯的逻辑链对于建立用户对模型结论的信任至关重要。为了实现 *可解释性*、*可追溯性* 和 *可干预性*，Alias-Agent 采用了假设驱动的智能体架构，明确地将任务执行转化为“提出假设 → 收集证据 → 验证假设 → 更新状态”的循环，作为通用深度研究流程的一种变体。这种架构使得分析逻辑能够被记录、检查和迭代，系统地解决了金融领域对透明证据链和清晰、可控逻辑的需求。
-
-金融分析模式支持树状结构搜索，通过深度层次探索将复杂的金融研究问题分解为可验证的子假设。该模式集成了金融 MCP 工具（可配置 API 密钥以便使用）并优化了报告可视化。除了生成全面的最终报告外，系统还支持可视化整个树状搜索过程，并生成优化的、用于演示的交互式 HTML 文件，使复杂的金融分析更易于理解和解释。
-
-
-#### 数据科学（Data Science）模式 ([详细文档](docs/data_science.md))
-
-<div align="center" style="margin: 20px 0;">
-  <img src="docs/figures/alias-ds-overall.png" width="80%" style="max-width: 800px; height: auto;">
-</div>
-
-
-在数据科学（Data Science）模式下，Alias-Agent 作为一个自主的、端到端的助手，将高层次的分析问题转化为可执行的数据科学工作流。它无缝处理从数据获取、清洗到建模、可视化和叙述性报告的全流程，只需最少的人工干预，使用户能够在现实场景中高效地从意图转向洞察。
-
-启动时，数据科学模式使用智能路由器将用户任务分配给三个核心场景之一：探索性数据分析、预测建模或精确数据计算。每个场景都由专门定制的、符合其分析意图的提示词模板驱动。在此基础上，它具备可扩展的文件过滤流水线，以快速在海量数据湖中定位相关文件。它能够稳健地将不规则的电子表格（包括合并单元格、多级标题和嵌入式注释）解析为结构化表格或语义化 JSON。它还支持多模态理解，能够对视觉内容进行总结和自然语言问答。对于探索性数据分析任务，它会自动生成交互式 HTML 报告，结合了洞察、可视化和可执行代码，以确保透明度和可复现性。
 
 ### 🧠 增强的记忆系统
 
@@ -167,25 +121,17 @@ docker pull agentscope/runtime-sandbox-alias:latest
 ### 🔑 API 密钥配置
 
 ```bash
-# 必需：模型 API 密钥（默认：DashScope）
-export DASHSCOPE_API_KEY=your_dashscope_api_key_here
+# 必需：OpenAI 兼容 API 密钥
+export OPENAI_API_KEY=your_api_key_here
 
-# 必需：搜索 API 密钥（用于深度研究模式）
+# 必需：OpenAI 兼容 API Base URL
+export OPENAI_BASE_URL=http://localhost:8317/v1
+
+# 必需：模型名称
+export OPENAI_MODEL_NAME=gpt-5.3-codex
+
+# 可选：搜索 API 密钥（用于网页搜索工具）
 export TAVILY_API_KEY=your_tavily_api_key_here
-
-# 可选：金融 MCP 工具 API 密钥（用于金融分析模式）。在以下地址激活 MCP 工具：
-#  https://bailian.console.aliyun.com/tab=app#/mcp-market/detail/Qieman
-# https://bailian.console.aliyun.com/tab=app#/mcp-market/detail/tendency-software
-export DASHSCOPE_MCP_API_KEY=your_dashscope_api_key_here
-
-
-# 可选：GitHub token（用于问答智能体访问 GitHub 仓库）
-# export GITHUB_TOKEN=your_github_token
-
-# 可选：使用其他模型（例如 OpenAI）
-# 首先，在 alias/agent/run.py 的 MODEL_FORMATTER_MAPPING 中添加你的模型
-# export MODEL=gpt-4
-# export OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 ### 📝 基础用法 -- CLI 部署
@@ -198,17 +144,6 @@ alias_agent run --mode general --task "Analyze Meta stock performance in Q1 2025
 
 # 浏览器使用（Browser Use）模式
 alias_agent run --mode browser --task "Search five latest research papers about browser-use agent"
-
-# 深度研究（Deep Research）模式
-alias_agent run --mode dr --task "Research the impact of AI on healthcare"
-
-# 金融分析（Financial Analysis）模式
-alias_agent run --mode finance --task "Analyze Tesla's Q4 2024 financial performance"
-
-# 数据科学（Data Science）模式
-alias_agent run --mode ds \
-  --task "Analyze the distribution of incidents across categories in 'incident_records.csv' to identify imbalances, inconsistencies, or anomalies, and determine their root cause." \
-  --datasource ./docs/data/incident_records.csv
 ```
 
 #### 输入/输出管理
@@ -288,7 +223,7 @@ redis-server
 runtime-sandbox-server --extension src/alias/runtime/alias_sandbox/alias_sandbox.py
 ```
 
-沙盒服务器能够在隔离的容器中安全地执行代码，这对于数据科学模式和其他需要代码执行的功能至关重要。
+沙盒服务器能够在隔离的容器中安全地执行代码，这对于需要代码执行的功能至关重要。
 
 #### 启动后端服务器
 
@@ -347,11 +282,11 @@ QDRANT_HOST=localhost
 QDRANT_PORT=6333
 QDRANT_EMBEDDING_MODEL_DIMS=1536
 
-# DashScope 配置
-DASHSCOPE_EMBEDDER=text-embedding-v4
-DASHSCOPE_MODEL_4_MEMORY=qwen3-max
-DASHSCOPE_API_KEY=your_dashscope_api_key_here
-DASHSCOPE_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+# OpenAI 兼容配置
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
+OPENAI_MODEL_NAME=gpt-5.3-codex
+OPENAI_API_KEY=your_api_key_here
+OPENAI_BASE_URL=http://localhost:8317/v1
 
 # User Profiling 配置
 USER_PROFILING_BASE_URL=http://localhost:6382
@@ -427,7 +362,7 @@ alias_agent_runtime --host 127.0.0.1 --port 8090 --chat-mode general
 
 **参数说明**：
 *   `--host` / `--port`: 指定服务的运行地址和端口（默认端口为 8090）。
-*   `--chat-mode`: 设置运行模式，可选 `general`, `dr`, `browser`, `ds`, `finance`（默认为 `general`）。
+*   `--chat-mode`: 设置运行模式，可选 `general`, `browser`（默认为 `general`）。
 *   `--web-ui` : (可选) 启用 AgentScope Runtime WebUI 以开启可视化交互界面。若仅需调用 API，请忽略此参数。
 
 > **注意**：首次启动并开启 `--web-ui` 时，系统会自动安装必要的前端依赖包，可能需要花费几分钟时间，请耐心等待。
@@ -440,7 +375,7 @@ from agentscope_runtime.engine.app import AgentApp
 from alias.server.runtime.runner.alias_runner import AliasRunner
 
 # 1. 初始化 AliasRunner
-# default_chat_mode 可选: "general", "dr", "browser", "ds", "finance"
+# default_chat_mode 可选: "general", "browser"
 runner = AliasRunner(
     default_chat_mode="general",
 )

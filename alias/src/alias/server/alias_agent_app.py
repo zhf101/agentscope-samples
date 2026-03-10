@@ -46,7 +46,7 @@ def main() -> None:
     parser.add_argument(
         "--chat-mode",
         default="general",
-        choices=["general", "dr", "browser", "ds", "finance"],
+        choices=["general", "browser"],
         help=(
             "Default chat mode used by AliasRunner when request doesn't "
             "specify chat_mode."

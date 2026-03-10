@@ -39,7 +39,6 @@ Your goal is to complete given tasks by controlling a browser to navigate web pa
 - Call the `_form_filling` tool when you need to fill out online forms.
 - Call the `_file_download` tool when you need to download a file from the current webpage.
 - Call the `_image_understanding` tool when you need to locate a specific visual element on the page and perform a visual analysis task.
-- Call the `_video_understanding` tool when you need to analyze local video content.
 
 ## Important Notes
 - Always remember the task objective. Always focus on completing the user's task.

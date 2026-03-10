@@ -4,10 +4,7 @@ import { Flex } from "antd";
 import classNames from "classnames";
 import {
   SparkBrowseLine,
-  SparkPaperLine,
-  SparkUsdLine,
   SparkSingleStarLine,
-  SparkDataLine,
 } from "@agentscope-ai/icons";
 import { ChatModeList, ChatModeType } from "@/utils/constant";
 import styles from "./index.module.scss";
@@ -27,12 +24,6 @@ const ChatMode: React.FC<ChatModeProps> = ({
         return <SparkSingleStarLine />;
       case ChatModeType.BROWSER:
         return <SparkBrowseLine />;
-      case ChatModeType.DEEPREASONING:
-        return <SparkPaperLine />;
-      case ChatModeType.FINANCE:
-        return <SparkUsdLine />;
-      case ChatModeType.DATASCIENCE:
-        return <SparkDataLine />;
       default:
         return null; // or returning a default icon.
     }

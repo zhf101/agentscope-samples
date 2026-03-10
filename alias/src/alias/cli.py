@@ -114,9 +114,6 @@ from alias.agent.mock import MockSessionService, UserMessage
 from alias.agent.run import (
     arun_meta_planner,      # 运行元规划器 Agent（通用型）
     arun_browseruse_agent,  # 运行浏览器 Agent
-    arun_deepresearch_agent, # 运行深度研究 Agent
-    arun_datascience_agent, # 运行数据科学 Agent
-    arun_finance_agent,     # 运行金融分析 Agent
     MODEL_FORMATTER_MAPPING, # 模型配置映射
     MODEL_CONFIG_NAME,       # 当前使用的模型配置名
 )
@@ -195,64 +192,6 @@ BROWSER_KEYWORDS = [
     r"twitter|facebook|instagram|linkedin|微博|抖音|小红书",
 ]
 
-# ------------------------------------------------------------------------------
-# 深度研究相关关键词
-# ------------------------------------------------------------------------------
-DEEP_RESEARCH_KEYWORDS = [
-    # 【研究类任务】
-    r"研究|调研|调查|分析.*?趋势|市场分析|竞品分析",
-    r"research|investigate|survey|analyze.*?trend|market.*?analysis",
-    
-    # 【信息收集】
-    r"收集.*?信息|整理.*?资料|综合.*?报告",
-    r"gather.*?information|collect.*?data|comprehensive.*?report",
-    
-    # 【深度分析】
-    r"深入.*?了解|详细.*?分析|全面.*?调研",
-    r"deep.*?dive|detailed.*?analysis|comprehensive.*?study",
-    
-    # 【对比分析】
-    r"对比.*?分析|比较.*?优劣|分析.*?差异",
-    r"compare|comparison|versus|vs\.|pros.*?cons",
-]
-
-# ------------------------------------------------------------------------------
-# 数据科学相关关键词
-# ------------------------------------------------------------------------------
-DATA_SCIENCE_KEYWORDS = [
-    # 【数据处理】
-    r"数据.*?分析|数据分析|统计|可视化|图表",
-    r"data.*?analysis|statistics|visualization|chart|plot",
-    
-    # 【文件类型】
-    # \. 表示真正的点号，\.csv 可以匹配 ".csv" 扩展名
-    r"\.csv|\.xlsx|\.json|\.parquet|dataframe",
-    
-    # 【机器学习】
-    r"机器学习|预测|模型|训练|特征",
-    r"machine.*?learning|predict|model|train|feature",
-    
-    # 【分析任务类型】
-    r"回归|分类|聚类|异常检测|时间序列",
-    r"regression|classification|clustering|anomaly|time.*?series",
-]
-
-# ------------------------------------------------------------------------------
-# 金融分析相关关键词
-# ------------------------------------------------------------------------------
-FINANCE_KEYWORDS = [
-    # 【金融术语】
-    r"股票|基金|投资|财经|证券|金融|行情",
-    r"stock|fund|invest|finance|security|market",
-    
-    # 【具体操作】
-    r"股价|涨跌|K线|财报|业绩|估值",
-    r"price|涨跌幅|financial|earnings|valuation",
-    
-    # 【金融平台】
-    r"同花顺|东方财富|雪球|wind|bloomberg",
-]
-
 
 # ==============================================================================
 # 第四部分：智能路由函数
@@ -275,9 +214,6 @@ def smart_route(user_msg: str, user_data: list = None) -> str:
         推荐的模式字符串：
         - 'general'  : 通用模式，使用元规划器处理复杂任务
         - 'browser'  : 浏览器模式，用于网页操作任务
-        - 'dr'       : 深度研究模式，用于研究分析任务
-        - 'ds'       : 数据科学模式，用于数据分析任务
-        - 'finance'  : 金融模式，用于股票基金分析
     
     【评分机制】
     我们为每个模式设置一个分数，根据匹配的关键词增加分数，
@@ -292,9 +228,6 @@ def smart_route(user_msg: str, user_data: list = None) -> str:
     # 这是一种"默认兜底"策略
     scores = {
         "browser": 0,   # 浏览器模式
-        "dr": 0,        # 深度研究模式
-        "ds": 0,        # 数据科学模式
-        "finance": 0,   # 金融模式
         "general": 1,   # 通用模式（默认有1分基础分）
     }
     
@@ -310,37 +243,6 @@ def smart_route(user_msg: str, user_data: list = None) -> str:
         # re.IGNORECASE 表示忽略大小写
         if re.search(pattern, msg_lower, re.IGNORECASE):
             scores["browser"] += 2  # 每匹配一个关键词加2分
-    
-    # 检查深度研究关键词
-    for pattern in DEEP_RESEARCH_KEYWORDS:
-        if re.search(pattern, msg_lower, re.IGNORECASE):
-            scores["dr"] += 2
-    
-    # 检查数据科学关键词
-    for pattern in DATA_SCIENCE_KEYWORDS:
-        if re.search(pattern, msg_lower, re.IGNORECASE):
-            scores["ds"] += 2
-    
-    # 检查金融关键词
-    # 【为什么 finance 加3分？】
-    # 金融任务比较专业，如果用户明确提到金融词汇，
-    # 我们更倾向于选择金融模式，所以加更高的分数
-    for pattern in FINANCE_KEYWORDS:
-        if re.search(pattern, msg_lower, re.IGNORECASE):
-            scores["finance"] += 3
-    
-    # -------------------------------------------------------------------------
-    # 数据源加分
-    # -------------------------------------------------------------------------
-    # 如果用户提供了数据文件，增加数据科学模式的分数
-    # 【使用场景】
-    # 用户上传了一个 CSV 文件，很可能是要做数据分析
-    if user_data:
-        for data_source in user_data:
-            # any() 函数：只要有一个条件为 True，就返回 True
-            # 检查数据源是否包含常见的数据文件扩展名
-            if any(ext in str(data_source).lower() for ext in ['.csv', '.xlsx', '.json', '.parquet']):
-                scores["ds"] += 3
     
     # -------------------------------------------------------------------------
     # 特殊情况处理
@@ -418,16 +320,13 @@ async def route_with_llm(
 
 Available modes:
 1. **browser**: For tasks requiring web browsing, clicking, form filling, booking, shopping, or interacting with websites
-2. **dr** (deep research): For in-depth research, market analysis, information gathering, comprehensive reports
-3. **ds** (data science): For data analysis, statistics, visualization, machine learning, or processing CSV/Excel files
-4. **finance**: For stock analysis, financial data, investment research
-5. **general**: For general tasks that can be handled by a meta-planner with multiple workers
+2. **general**: For general tasks that can be handled by a meta-planner with multiple workers
 
 User request: {user_msg}
 
 Data sources: {user_data if user_data else "None"}
 
-Reply with ONLY the mode name (browser/dr/ds/finance/general), nothing else."""
+Reply with ONLY the mode name (browser/general), nothing else."""
         
         # 调用模型获取响应
         # 【Msg 对象】
@@ -439,7 +338,7 @@ Reply with ONLY the mode name (browser/dr/ds/finance/general), nothing else."""
         mode = response.content[0]["text"].strip().lower()
         
         # 验证返回的模式是否有效
-        if mode in ["browser", "dr", "ds", "finance", "general"]:
+        if mode in ["browser", "general"]:
             logger.info(f"LLM router selected mode: {mode}")
             return mode
         
@@ -535,10 +434,7 @@ async def run_agent_task(
         mode: Agent 模式
             - 'auto'   : 自动选择（智能路由）
             - 'general': 通用模式
-            - 'dr'     : 深度研究模式
-            - 'ds'     : 数据科学模式
             - 'browser': 浏览器模式
-            - 'finance': 金融模式
         user_data_config: 用户数据源配置
         use_long_term_memory_service: 是否启用长期记忆服务
         use_llm_routing: 是否使用 LLM 进行智能路由
@@ -705,27 +601,12 @@ async def _run_agent_loop(
                     session,
                     sandbox=sandbox,
                 )
-            elif mode == "dr":
-                # 深度研究 Agent：用于研究分析任务
-                await arun_deepresearch_agent(
-                    session,
-                    sandbox=sandbox,
-                )
-            elif mode == "ds":
-                # 数据科学 Agent：用于数据分析任务
-                await arun_datascience_agent(
-                    session,
-                    sandbox=sandbox,
-                )
             elif mode == "general":
                 # 通用 Agent：用于复杂任务，可以调用其他 Agent
                 await arun_meta_planner(
                     session,
                     sandbox=sandbox,
                 )
-            elif mode == "finance":
-                # 金融 Agent：用于股票基金分析
-                await arun_finance_agent(session, sandbox=sandbox)
             else:
                 # 未知模式，抛出错误
                 raise ValueError(f"Unknown mode: {mode}")
@@ -835,16 +716,13 @@ def main():
     # --mode 参数：Agent 模式选择
     run_parser.add_argument(
         "--mode",
-        choices=["auto", "general", "dr", "ds", "browser", "finance"],  # 可选值
+        choices=["auto", "general", "browser"],  # 可选值
         default="auto",  # 默认值
         help=(
             "Agent mode (default: auto - intelligent selection):\n"
             "  'auto'     - Smart routing based on task content\n"
             "  'general'  - Meta planner with workers\n"
-            "  'dr'       - Deep research agent\n"
-            "  'ds'       - Data science agent\n"
-            "  'browser'  - Browser agent\n"
-            "  'finance'  - Finance agent"
+            "  'browser'  - Browser agent"
         ),
     )
 

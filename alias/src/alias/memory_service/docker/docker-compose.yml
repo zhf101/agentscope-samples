@@ -10,11 +10,11 @@ services:
       - BACKEND_HOST=${BACKEND_HOST:-host.docker.internal}
       - BACKEND_PORT=${BACKEND_PORT:-8001}
       - BACKEND_URL=${BACKEND_URL:-http://host.docker.internal:8001}
-      # DashScope API configuration
-      - DASHSCOPE_API_KEY=${DASHSCOPE_API_KEY}
-      - DASHSCOPE_API_BASE_URL=${DASHSCOPE_API_BASE_URL}
-      - DASHSCOPE_MODEL_4_MEMORY=${DASHSCOPE_MODEL_4_MEMORY}
-      - DASHSCOPE_MODEL=${DASHSCOPE_MODEL:-gpt-4o}
+      # OpenAI-compatible API configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - OPENAI_BASE_URL=${OPENAI_BASE_URL}
+      - OPENAI_MODEL_NAME=${OPENAI_MODEL_NAME}
+      - OPENAI_EMBEDDING_MODEL=${OPENAI_EMBEDDING_MODEL}
       # Neo4j configuration
       - NEO4J_URL=${NEO4J_URL:-bolt://localhost:7687}
       - NEO4J_USER=${NEO4J_USER:-neo4j}

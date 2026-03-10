@@ -63,16 +63,16 @@ check_env_vars() {
     # Check for required environment variables
     local missing_vars=()
 
-    if [ -z "${DASHSCOPE_API_KEY:-}" ]; then
-        missing_vars+=("DASHSCOPE_API_KEY")
+    if [ -z "${OPENAI_API_KEY:-}" ]; then
+        missing_vars+=("OPENAI_API_KEY")
     fi
 
-    if [ -z "${DASHSCOPE_API_BASE_URL:-}" ]; then
-        missing_vars+=("DASHSCOPE_API_BASE_URL")
+    if [ -z "${OPENAI_BASE_URL:-}" ]; then
+        missing_vars+=("OPENAI_BASE_URL")
     fi
 
-    if [ -z "${DASHSCOPE_MODEL_4_MEMORY:-}" ]; then
-        missing_vars+=("DASHSCOPE_MODEL_4_MEMORY")
+    if [ -z "${OPENAI_MODEL_NAME:-}" ]; then
+        missing_vars+=("OPENAI_MODEL_NAME")
     fi
 
     if [ ${#missing_vars[@]} -gt 0 ]; then
@@ -83,10 +83,10 @@ check_env_vars() {
         done
         echo ""
         print_status "Example .env file:"
-        echo "  DASHSCOPE_API_KEY=your_api_key_here"
-        echo "  DASHSCOPE_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1"
-        echo "  DASHSCOPE_MODEL_4_MEMORY=gpt-4o"
-        echo "  DASHSCOPE_MODEL=gpt-4o"
+        echo "  OPENAI_API_KEY=your_api_key_here"
+        echo "  OPENAI_BASE_URL=http://localhost:8317/v1"
+        echo "  OPENAI_MODEL_NAME=gpt-5.3-codex"
+        echo "  OPENAI_EMBEDDING_MODEL=text-embedding-3-large"
         echo "  USER_PROFILING_REDIS_PASSWORD=your_redis_password"
         echo ""
     else

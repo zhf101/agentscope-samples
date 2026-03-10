@@ -13,8 +13,8 @@ from tenacity import retry, stop_after_attempt, wait_fixed
 from pydantic import BaseModel
 
 from agentscope.message import Msg
-from agentscope.model import DashScopeChatModel
-from agentscope.formatter import DashScopeChatFormatter
+from agentscope.model import OpenAIChatModel
+from agentscope.formatter import OpenAIChatFormatter
 
 from alias.agent.utils.constants import MODEL_MAX_RETRIES
 
@@ -26,8 +26,8 @@ from alias.agent.utils.constants import MODEL_MAX_RETRIES
     # before_sleep=_print_exc_on_retry
 )
 async def model_call_with_retry(
-    model: DashScopeChatModel = None,
-    formatter: DashScopeChatFormatter = None,
+    model: OpenAIChatModel = None,
+    formatter: OpenAIChatFormatter = None,
     messages: list[dict[str, Any]] = None,
     tool_json_schemas: list[dict] | None = None,
     tool_choice: Literal["auto", "none", "required"] | str | None = None,
@@ -41,10 +41,10 @@ async def model_call_with_retry(
     to handle potential failures during the API call.
 
     Args:
-        model: The DashScope chat model to use for inference
+        model: The OpenAI-compatible chat model to use for inference
         formatter: Formatter to prepare messages for the model
         msg_name: Name for the returned message object
-        see DashScopeChatModel's docstring for more details
+        see OpenAIChatModel's docstring for more details
 
     Returns:
         Message object containing the model response
@@ -119,7 +119,7 @@ class LLMCallManager:
         Args:
             model_name: Name of the model to use for the call
             messages: List of message dictionaries to send to the model
-            see DashScopeChatModel's docstring for more details
+            see OpenAIChatModel's docstring for more details
 
         Returns:
             String response from the LLM

@@ -29,17 +29,20 @@ load_dotenv()
 MEM0_DEFAULT_LLM_CONFIG = LlmConfig(
     provider="openai",
     config={
-        "model": os.environ.get("DASHSCOPE_MODEL_4_MEMORY"),
-        "api_key": os.environ.get("DASHSCOPE_API_KEY"),
-        "openai_base_url": os.environ.get("DASHSCOPE_API_BASE_URL"),
+        "model": os.environ.get("OPENAI_MODEL_NAME"),
+        "api_key": os.environ.get("OPENAI_API_KEY"),
+        "openai_base_url": os.environ.get("OPENAI_BASE_URL"),
     },
 )
 MEM0_DEFAULT_EMBEDDER_CONFIG = EmbedderConfig(
     provider="openai",
     config={
-        "model": os.environ.get("DASHSCOPE_EMBEDDER", "text-embedding-v4"),
-        "api_key": os.environ.get("DASHSCOPE_API_KEY"),
-        "openai_base_url": os.environ.get("DASHSCOPE_API_BASE_URL"),
+        "model": os.environ.get(
+            "OPENAI_EMBEDDING_MODEL",
+            "text-embedding-3-large",
+        ),
+        "api_key": os.environ.get("OPENAI_API_KEY"),
+        "openai_base_url": os.environ.get("OPENAI_BASE_URL"),
         "embedding_dims": os.environ.get("QDRANT_EMBEDDING_MODEL_DIMS", 1536),
     },
 )

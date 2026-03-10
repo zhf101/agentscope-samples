@@ -56,12 +56,12 @@ Create a `.env` file in the root directory:
 
 ```bash
 # Required
-DASHSCOPE_API_KEY=your_api_key_here
-DASHSCOPE_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
-DASHSCOPE_MODEL_4_MEMORY=gpt-4o
+OPENAI_API_KEY=your_api_key_here
+OPENAI_BASE_URL=http://localhost:8317/v1
+OPENAI_MODEL_NAME=gpt-5.3-codex
 
 # Optional
-DASHSCOPE_MODEL=gpt-4o
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
 USER_PROFILING_REDIS_PASSWORD=your_redis_password
 LOG_LEVEL=INFO
 PYTHONPATH=/app

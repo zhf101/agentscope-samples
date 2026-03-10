@@ -6,7 +6,6 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "aiohttp>=3.11.16",
-    "dashscope>=1.23.1",
     "docker>=7.1.0",
     "fastapi>=0.115.12",
     "gitpython>=3.1.44",

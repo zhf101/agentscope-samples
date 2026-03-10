@@ -51,16 +51,14 @@ class ToolMemory(BaseMemory):
             f"http://{qdrant_host}:{qdrant_port}"
         )
         self._app = ReMeApp(
-            "llm.default.model_name=qwen3-30b-a3b-thinking-2507",
-            "embedding_model.default.model_name=text-embedding-v4",
+            f"llm.default.model_name={os.environ.get('OPENAI_MODEL_NAME', 'gpt-5.3-codex')}",
+            f"embedding_model.default.model_name={os.environ.get('OPENAI_EMBEDDING_MODEL', 'text-embedding-3-large')}",
             "vector_store.default.backend=qdrant",
             vector_store_url,
-            llm_api_key=os.environ.get("DASHSCOPE_API_KEY"),
-            llm_api_base=("https://dashscope.aliyuncs.com/compatible-mode/v1"),
-            embedding_api_key=os.environ.get("DASHSCOPE_API_KEY"),
-            embedding_api_base=(
-                "https://dashscope.aliyuncs.com/compatible-mode/v1"
-            ),
+            llm_api_key=os.environ.get("OPENAI_API_KEY"),
+            llm_api_base=os.environ.get("OPENAI_BASE_URL"),
+            embedding_api_key=os.environ.get("OPENAI_API_KEY"),
+            embedding_api_base=os.environ.get("OPENAI_BASE_URL"),
         )
 
         self.inited: bool = False

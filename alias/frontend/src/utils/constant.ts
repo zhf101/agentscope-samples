@@ -13,9 +13,6 @@ enum LANGUAGETYPE {
 enum ChatModeType {
   GENERAL = "general",
   BROWSER = "browser",
-  DEEPREASONING = "dr",
-  FINANCE = "finance",
-  DATASCIENCE = "ds",
 }
 const markdownRegex = /^```markdown\n([\s\S]*?)```$/;
 const codeBlockRegex = /^```\n([\s\S]*?)```$/;
@@ -27,18 +24,6 @@ const ChatModeList = [
   {
     value: ChatModeType.BROWSER,
     label: "Browser Use",
-  },
-  {
-    value: ChatModeType.DEEPREASONING,
-    label: "Deep Research",
-  },
-  {
-    value: ChatModeType.FINANCE,
-    label: "Financial Analysis",
-  },
-  {
-    value: ChatModeType.DATASCIENCE,
-    label: "Data Science",
   },
 ];
 export {

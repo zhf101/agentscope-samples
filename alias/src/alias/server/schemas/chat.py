@@ -36,16 +36,10 @@ class ChatMode(str, Enum):
     聊天模式枚举（决定后端选择哪类 Agent）。
 
     - GENERAL: 通用模式（元规划器）
-    - DR: 深度研究模式
     - BROWSER: 浏览器自动化模式
-    - DS: 数据科学模式
-    - FINANCE: 金融模式
     """
     GENERAL = "general"
-    DEEPREASONING = "dr"
     BROWSER = "browser"
-    DATASCIENCE = "ds"
-    FINANCE = "finance"
 
 
 class LanguageType(str, Enum):
@@ -90,7 +84,7 @@ class ChatRequest(SQLModel):
     - files: 文件 ID 列表（通常是前面上传接口返回的 UUID）
     - chat_type: 聊天类型（chat/task）
     - language_type: 语言偏好
-    - chat_mode: 希望使用的模式（general/dr/browser/ds/finance）
+    - chat_mode: 希望使用的模式（general/browser）
     - roadmap: 可选的计划变更信息（前端可能回传）
     - use_long_term_memory_service: 是否启用长期记忆服务
     """

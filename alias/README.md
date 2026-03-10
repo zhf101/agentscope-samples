@@ -29,14 +29,14 @@ Unlock your unique experience at <a href="https://alias.agentscope.io/"> alias.a
 
 *Alias-Agent* (short for *Alias*) is an LLM-empowered agent built on [AgentScope](https://github.com/agentscope-ai/agentscope) and [AgentScope-runtime](https://github.com/agentscope-ai/agentscope-runtime/), designed to serve as a general-purpose intelligent assistant for responding to user queries. Alias excels at decomposing complicated problems, constructing roadmaps, and applying appropriate strategies to tackle diverse real-world tasks.
 
-Alias employs a multi-mode operational mechanism for flexible task execution, including `General`, `Browser Use`, `Deep Research`, `Financial Analysis`, and `Data Science`. When switching between different operational modes, Alias is equipped with tailored instructions, specialized tool sets, and the capability to orchestrate various expert agents. This allows Alias to better adapt to the specific requirements of diverse downstream tasks. For example, when handling financial analysis, Alias employs traceable reasoning chains and generates explainable results to increase user trust in its decision-making, along with optimized report visualizations; When resolving data science tasks, Alias can access user-associated databases and is designed to facilitate efficient data analysis, processing, and prediction.
+Alias employs a focused multi-mode mechanism for flexible task execution, including `General` and `Browser Use`. It keeps a strong planning and decomposition core while offering a dedicated browser-use agent for web interaction tasks.
 
 We aim for Alias to serve as an out-of-the-box solution that users can readily deploy for various tasks, supported by a comprehensive pipeline for agent development, testing, and deployment based on the AgentScope ecosystem. Beyond being a ready-to-use agent, we also envision Alias as a foundational template that can be adapted for diverse scenarios. Developers are encouraged to extend and customize Alias at the tool, prompt, and agent levels to meet specific requirements.
 
 We welcome more developers to join the community and contribute to ongoing innovation.
 
 ## 📢 News
-- **[2025-12]** Five operational modes available: General, Browser Use, Deep Research, Financial Analysis, and Data Science modes.
+- **[2025-12]** Two operational modes available: General and Browser Use.
 
 - **[2025-12]** Memory system upgrades: Tool Memory service for persistent tool invocation traces and User Profiling service for personalized user experiences.
 
@@ -49,19 +49,14 @@ We welcome more developers to join the community and contribute to ongoing innov
 
 ### 🤖 Various Operational Modes for Diverse Scenarios
 
-It provides five operational modes for diverse real-world tasks:
+It provides two operational modes for diverse real-world tasks:
 
-- **General**: Meta Planner capable of auto-switching among easy-task, planning-execution, browser use, deep research, and data science modes based on task context.
-- **Browser Use**: Enhanced browser-use agent with multimodal capabilities.
-- **Deep Research**: Deep Research agent with tree-structure question/hypothesis exploration and user-centric features.
-- **Financial Analysis**: Hypothesis-driven financial analysis agent.
-- **Data Science**: Specialized agent for data science workflows, such as machine learning, numerical computation, and exploratory data analysis.
+- **General**: Meta Planner capable of decomposing tasks and orchestrating workers based on context.
+- **Browser Use**: Browser-use agent for web interaction tasks (navigation, clicking, form filling, downloads).
 
 #### General Mode
 
-The General mode features the Meta Planner, which orchestrates task execution with automatic mode switching and comprehensive interrupt support. The Meta Planner intelligently routes tasks to appropriate specialized agents based on context, while maintaining robust state preservation throughout the execution lifecycle. This enables seamless transitions between different operational modes (such as deep research and data science) and ensures continuity even when tasks are interrupted or redirected.
-
-The general mode also provides an out-of-the-box AgentScope-specific QA Agent ([more details](docs/qa_agent.md)), pre-configured with high-frequency AgentScope-related Q&A pairs. By integrating RAG and GitHub MCP tools, the QA agent can dynamically retrieve the latest source code structure, official tutorial, and community discussions, and combine them with relevant information flexibly matched from a private knowledge base to deliver accurate answers.
+The General mode features the Meta Planner, which orchestrates task execution with automatic routing between planning and worker execution while maintaining robust state preservation throughout the execution lifecycle.
 
 #### Browser Use Mode
 <p align="center">
@@ -73,50 +68,9 @@ The general mode also provides an out-of-the-box AgentScope-specific QA Agent ([
   />
 </p>
 
-The Browser Use mode extends the browser-use agent with comprehensive multimodal capabilities, enabling fine-grained understanding of visual content and intelligent interaction with web elements. The agent features advanced image understanding that can extract semantic meaning from charts, graphs, and visual content, including axis labels, trends, and outliers. Video comprehension capabilities allow the agent to extract and reason over video content, while automated table filling and intelligent file download tools streamline form interactions and document management.
+The Browser Use mode focuses on reliable web interaction and dynamic subtask management for complex multi-step browsing tasks.
 
 To handle the dynamic nature of web browsing, the Browser Use mode implements sophisticated dynamic subtask management. The system automatically updates subtasks as web pages change, adapting to new content, pop-ups, or navigation events. This ensures the agent can maintain context and continue task execution even when the browsing environment evolves, making it particularly effective for complex multi-step web interactions that require sustained attention and adaptation.
-
-#### Deep Research Mode
-<p align="center">
-  <img
-    src="assets/deep_research.png"
-    alt="Deep Research Mode"
-    width="600"
-    height="auto"
-  />
-</p>
-
-The Deep Research mode introduces user-centric enhancements that transform research tasks into collaborative, transparent processes. For research-type questions, the agent employs a pre-search module that gathers professional, detailed information before generating follow-up questions, ensuring that inquiries are more valuable and well-informed. This approach significantly improves the quality of research interactions by grounding questions in comprehensive background knowledge.
-
-This mode also features a tree-structure research process that is driven by diving deeper and deeper by information gathering. Users can also dynamically interrupt the deep research process and steer the research direction. The consolidated execution path provides a unified codebase with configurable prompts, SOPs, and toolkits, allowing the Deep Research agent to adapt to different domains while maintaining a consistent, extensible architecture.
-
- #### Financial Analysis Mode ([Detailed Docs](docs/financial_analysis.md))
-
-<p align="center">
-  <img
-    src="docs/figures/finance_overview.png"
-    alt="Financial Analysis Mode"
-    width="600"
-    height="auto"
-  />
-</p>
-
-In financial analysis scenarios, complex reasoning and traceable logic chains are crucial for building user trust in model conclusions. To achieve *explainability*, *traceability*, and *intervenability*, Alias-Agent adopts a hypothesis-driven agent architecture that explicitly transforms task execution into a “propose hypothesis → collect evidence → verify hypothesis → update state” loop, as a variant of the general deep research process. This architecture enables analysis logic to be recorded, examined, and iterated upon, systematically addressing the financial domain's need for transparent evidence chains and clear, controllable logic.
-
-The Financial Analysis mode supports tree-structured search, decomposing complex financial research questions into verifiable sub-hypotheses through deep hierarchical exploration. This mode integrates with financial MCP tools (API keys can be configured for easy use) and optimizes report visualization. In addition to generating comprehensive final reports, the system supports visualization of the entire tree search process and produces interactive HTML files optimized for presentation, making complex financial analyses more accessible and interpretable.
-
-
-#### Data Science Mode ([Detailed Docs](docs/data_science.md))
-
-<div align="center" style="margin: 20px 0;">
-  <img src="docs/figures/alias-ds-overall.png" width="80%" style="max-width: 800px; height: auto;">
-</div>
-
-
-In Data Science mode, Alias-Agent serves as an autonomous, end-to-end assistant that transforms high-level analytical questions into executable data science workflows. It seamlessly handles the full pipeline from data acquisition and cleaning to modeling, visualization, and narrative reporting with minimal human intervention, enabling users to move efficiently from intent to insight in real-world scenarios.
-
-At startup, the Data Science mode uses an intelligent router to assign the user's task to one of three core scenarios: Exploratory Data Analysis (EDA), Predictive Modeling, or Exact Data Computation. Each scenario is driven by a dedicated prompt template tailored to its analytical intent. Built on this foundation, it features a scalable file filtering pipeline to quickly locate relevant files in massive data lakes. It robustly parses irregular spreadsheets, including merged cells, multi-level headers, and embedded notes, into structured tables or semantic JSON. It also supports multimodal understanding, enabling summarization and natural-language question answering about visual content. For EDA tasks, it automatically generates interactive HTML reports that combine insights, visualizations, and executable code to ensure transparency and reproducibility.
 
 ### 🧠 Enhanced Memory System
 
@@ -166,25 +120,17 @@ More details can refer to [AgentScope Runtime documentation](https://runtime.age
 ### 🔑 API Keys Configuration
 
 ```bash
-# Required: Model API key (default: DashScope)
-export DASHSCOPE_API_KEY=your_dashscope_api_key_here
+# Required: OpenAI-compatible API key
+export OPENAI_API_KEY=your_api_key_here
 
-# Required: Search API key (for Deep Research mode)
+# Required: OpenAI-compatible API base URL
+export OPENAI_BASE_URL=http://localhost:8317/v1
+
+# Required: Model name
+export OPENAI_MODEL_NAME=gpt-5.3-codex
+
+# Optional: Search API key (for web search tools)
 export TAVILY_API_KEY=your_tavily_api_key_here
-
-# Optional: Finance MCP Tools API key (for Financial Analysis mode). Activate MCP tools at:
-#  https://bailian.console.aliyun.com/tab=app#/mcp-market/detail/Qieman
-# https://bailian.console.aliyun.com/tab=app#/mcp-market/detail/tendency-software
-export DASHSCOPE_MCP_API_KEY=your_dashscope_api_key_here
-
-
-# Optional: GitHub token (for QA Agent to access GitHub repositories)
-# export GITHUB_TOKEN=your_github_token
-
-# Optional: Using other models (e.g., OpenAI)
-# First, add your model to MODEL_FORMATTER_MAPPING in alias/agent/run.py
-# export MODEL=gpt-4
-# export OPENAI_API_KEY=your_openai_api_key_here
 ```
 
 ### 📝 Basic Usage -- CLI Deployment
@@ -192,22 +138,12 @@ export DASHSCOPE_MCP_API_KEY=your_dashscope_api_key_here
 Execute an agent task with different modes:
 
 ```bash
+#!/usr/bin/env bash
 # General mode
 alias_agent run --mode general --task "Analyze Meta stock performance in Q1 2025"
 
 # Browser Use mode
 alias_agent run --mode browser --task "Search five latest research papers about browser-use agent"
-
-# Deep Research mode
-alias_agent run --mode dr --task "Research the impact of AI on healthcare"
-
-# Financial Analysis mode
-alias_agent run --mode finance --task "Analyze Tesla's Q4 2024 financial performance"
-
-# Data Science mode
-alias_agent run --mode ds \
-  --task "Analyze the distribution of incidents across categories in 'incident_records.csv' to identify imbalances, inconsistencies, or anomalies, and determine their root cause." \
-  --datasource ./docs/data/incident_records.csv
 ```
 
 #### Input/Output Management
@@ -285,7 +221,7 @@ For full functionality including code execution and file operations, start the s
 runtime-sandbox-server --extension src/alias/runtime/alias_sandbox/alias_sandbox.py
 ```
 
-The sandbox server enables secure code execution in isolated containers, which is essential for Data Science mode and other features that require code execution.
+The sandbox server enables secure code execution in isolated containers, which is essential for features that require code execution.
 
 #### Start the Backend Server
 
@@ -344,11 +280,11 @@ QDRANT_HOST=localhost
 QDRANT_PORT=6333
 QDRANT_EMBEDDING_MODEL_DIMS=1536
 
-# DashScope Configuration
-DASHSCOPE_EMBEDDER=text-embedding-v4
-DASHSCOPE_MODEL_4_MEMORY=qwen3-max
-DASHSCOPE_API_KEY=your_dashscope_api_key_here
-DASHSCOPE_API_BASE_URL=https://dashscope.aliyuncs.com/compatible-mode/v1
+# OpenAI-compatible Configuration
+OPENAI_EMBEDDING_MODEL=text-embedding-3-large
+OPENAI_MODEL_NAME=gpt-5.3-codex
+OPENAI_API_KEY=your_api_key_here
+OPENAI_BASE_URL=http://localhost:8317/v1
 
 # User Profiling Configuration
 USER_PROFILING_BASE_URL=http://localhost:6382
@@ -425,7 +361,7 @@ alias_agent_runtime --host 127.0.0.1 --port 8090 --chat-mode general
 
 **Parameter Descriptions**:
 *   `--host` / `--port`: Specify the service address and port (default port is 8090).
-*   `--chat-mode`: Set the running mode. Options: `general`, `dr`, `browser`, `ds`, `finance` (default: `general`).
+*   `--chat-mode`: Set the running mode. Options: `general`, `browser` (default: `general`).
 *   `--web-ui`: (Optional) Enable AgentScope Runtime WebUI for a visual interaction interface. Skip this if you only need the API.
 
 > **Note**: When enabling `--web-ui` for the first time, the system will automatically install necessary frontend dependencies. This may take a few minutes.
@@ -438,7 +374,7 @@ from agentscope_runtime.engine.app import AgentApp
 from alias.server.runtime.runner.alias_runner import AliasRunner
 
 # 1. Initialize AliasRunner
-# default_chat_mode options: "general", "dr", "browser", "ds", "finance"
+# default_chat_mode options: "general", "browser"
 runner = AliasRunner(
     default_chat_mode="general",
 )

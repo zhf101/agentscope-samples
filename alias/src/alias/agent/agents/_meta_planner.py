@@ -31,18 +31,18 @@ MetaPlanner 就是 Agent 系统的"项目经理"！
 ┌─────────────────────────────────────────────────────────────────┐
 │                      MetaPlanner                                 │
 │                                                                  │
-│  1. 分析任务："这是一个金融分析任务"                              │
-│  2. 选择模式：enter_deep_research_mode                           │
-│  3. 分配给：DeepResearchAgent（金融模式）                        │
+│  1. 分析任务：识别任务类型与所需资源                             │
+│  2. 选择模式：规划/执行                                           │
+│  3. 分配给：Browser/Worker 等                                   │
 └─────────────────────────────┬───────────────────────────────────┘
                               │
                               ▼
 ┌─────────────────────────────────────────────────────────────────┐
-│                   DeepResearchAgent                              │
+│                     Worker Agents                                │
 │                                                                  │
-│  1. 搜索阿里巴巴股票信息                                         │
-│  2. 分析财务数据                                                 │
-│  3. 生成报告                                                     │
+│  1. 搜索/访问网页                                                 │
+│  2. 整理要点                                                     │
+│  3. 汇总结果                                                     │
 └─────────────────────────────┬───────────────────────────────────┘
                               │
                               ▼
@@ -100,7 +100,6 @@ from agentscope.tool import ToolResponse  # 工具响应类
 # 项目内部导入
 from alias.agent.agents import AliasAgentBase
 from alias.agent.tools import AliasToolkit, share_tools
-from alias.agent.tools.add_qa_tools import add_qa_tools
 
 # 导入规划器相关的工具类
 from .meta_planner_utils import (  # pylint: disable=C0411
@@ -108,7 +107,6 @@ from .meta_planner_utils import (  # pylint: disable=C0411
     RoadmapManager,    # 路线图管理器
     WorkerManager,     # Worker 管理器
 )
-from alias.agent.agents.ds_agent_utils import set_run_ipython_cell
 from .common_agent_utils import (
     save_post_reasoning_state,           # 保存推理后状态
     generate_response_post_action_hook,  # 生成响应后处理钩子
@@ -120,10 +118,8 @@ from .meta_planner_utils import (
     planner_save_post_action_state,                    # 行动后保存状态钩子
 )
 from ..utils.constants import (
-    PLANNER_MAX_ITER,               # 规划器最大迭代次数
-    DEFAULT_PLANNER_NAME,           # 默认规划器名称
-    DEFAULT_DEEP_RESEARCH_AGENT_NAME,  # 默认深度研究 Agent 名称
-    DEFAULT_DS_AGENT_NAME,          # 默认数据科学 Agent 名称
+    PLANNER_MAX_ITER,     # 规划器最大迭代次数
+    DEFAULT_PLANNER_NAME,  # 默认规划器名称
 )
 
 
@@ -366,10 +362,6 @@ class MetaPlanner(AliasAgentBase):
                 "change yourself to a more long-term planning mode."
                 "If you need tool supplement for easier task, you can call "
                 "`enter_easy_task_mode` to ask for more tools."
-                "If the user asks a question related to AgentScope "
-                "(e.g., about its usage or architecture), you can call "
-                "`enter_qa_mode` to ask for RAG and GitHub MCP tools "
-                "to answer the question."
             )
         else:
             self.base_sys_prompt = sys_prompt
@@ -669,18 +661,6 @@ class MetaPlanner(AliasAgentBase):
                 self.toolkit.register_tool_function(
                     self.enter_easy_task_mode,
                 )
-            if "enter_qa_mode" not in self.toolkit.tools:
-                self.toolkit.register_tool_function(
-                    self.enter_qa_mode,
-                )
-            if "enter_data_analysis_mode" not in self.toolkit.tools:
-                self.toolkit.register_tool_function(
-                    self.enter_data_analysis_mode,
-                )
-            if "enter_deep_research_mode" not in self.toolkit.tools:
-                self.toolkit.register_tool_function(
-                    self.enter_deep_research_mode,
-                )
             # 动态模式下，规划工具默认不激活
             self.toolkit.update_tool_groups(["planning"], False)
             
@@ -953,194 +933,3 @@ class MetaPlanner(AliasAgentBase):
             for func_dict in self.worker_full_toolkit.get_json_schemas()
         ]
         return full_worker_tool_list
-
-    async def enter_deep_research_mode(
-        self,
-        user_query: str,
-    ):
-        """
-        进入深度研究模式。
-        
-        【什么时候使用？】
-        用户需要进行研究或信息收集任务，需要综合性报告。
-        
-        【参数说明】
-        Args:
-            user_query: 处理后的用户查询
-        """
-        try:
-            # 从 Worker 池获取深度研究 Agent
-            _, dr_agent = self.worker_manager.worker_pool.get(
-                DEFAULT_DEEP_RESEARCH_AGENT_NAME,
-            )
-            
-            # 执行 Agent
-            msg = await dr_agent(
-                Msg(
-                    "user",
-                    content=[TextBlock(type="text", text=user_query)],
-                    role="user",
-                ),
-            )
-        except Exception as e:
-            logger.error(traceback.format_exc())
-            return ToolResponse(
-                metadata={"success": False},
-                content=[
-                    TextBlock(
-                        type="text",
-                        text=(f"{e}\n" "Fail to execute deep research agent."),
-                    ),
-                ],
-            )
-        
-        return ToolResponse(
-            metadata={"success": True, "return_msg": msg},
-            content=[TextBlock(type="text", text=msg.get_text_content())],
-        )
-
-    async def enter_data_analysis_mode(
-        self,
-        user_query: str,
-    ):
-        """
-        进入数据分析模式。
-        
-        【什么时候使用？】
-        用于复杂的、基于代码的数据分析任务。
-        
-        【参数说明】
-        Args:
-            user_query: 处理后的用户查询
-        """
-        try:
-            # 从 Worker 池获取数据科学 Agent
-            _, ds_agent = self.worker_manager.worker_pool.get(
-                DEFAULT_DS_AGENT_NAME,
-            )
-            
-            # 设置 IPython 执行环境
-            set_run_ipython_cell(self.toolkit.sandbox)
-            
-            # 添加用户消息到记忆
-            await ds_agent.memory.add(
-                Msg(
-                    "user",
-                    content=[TextBlock(type="text", text=user_query)],
-                    role="user",
-                ),
-            )
-            
-            # 执行 Agent
-            msg = await ds_agent()
-            
-        except Exception as e:
-            logger.error(traceback.format_exc())
-            return ToolResponse(
-                metadata={"success": False},
-                content=[
-                    TextBlock(
-                        type="text",
-                        text=(f"{e}\n" "Fail to execute data analysis agent."),
-                    ),
-                ],
-            )
-        
-        return ToolResponse(
-            metadata={"success": True, "return_msg": msg},
-            content=[TextBlock(type="text", text=msg.get_text_content())],
-        )
-
-    async def enter_qa_mode(
-        self,
-        task_name: str,
-    ) -> ToolResponse:
-        """
-        进入问答模式。
-        
-        【什么时候使用？】
-        1. 用户询问 AgentScope 相关问题
-        2. 任务可以在 15 次迭代内完成
-        3. 不需要浏览器操作
-        
-        【参数说明】
-        Args:
-            task_name: 任务名称
-        """
-        self._ensure_file_system_functions()
-        
-        # 加载 QA 模式系统提示词
-        qa_prompt_path = (
-            Path(__file__).resolve().parent
-            / "qa_agent_utils"
-            / "build_in_prompt"
-            / "qaagent_base_sys_prompt.md"
-        )
-        self._sys_prompt = qa_prompt_path.read_text(encoding="utf-8").format(
-            name=self.name,
-        )
-        
-        # 获取可用工具
-        available_tool_names = [
-            item.get("function", {}).get("name")
-            for item in list(self.toolkit.get_json_schemas())
-        ]
-        
-        # 添加 QA 工具（如果还没有）
-        if "retrieve_knowledge" not in available_tool_names:
-            await add_qa_tools(self.toolkit)
-        
-        # 检查 GitHub Token
-        github_error_message = None
-        if not os.getenv("GITHUB_TOKEN"):
-            github_error_message = (
-                "⚠️ EnvironmentSetupError: Missing GITHUB_TOKEN; "
-                "GitHub MCP tools cannot be used. "
-                "Please export GITHUB_TOKEN in "
-                "your environment before proceeding."
-            )
-
-        # 设置任务目录
-        self.task_dir = os.path.join(
-            self.agent_working_dir_root,
-            task_name,
-        )
-        await self._create_task_directory()
-        
-        # 设置工作模式
-        self.work_pattern = "worker"
-        
-        # 获取更新后的工具列表
-        available_tool_names = [
-            item.get("function", {}).get("name")
-            for item in list(self.toolkit.get_json_schemas())
-        ]
-        
-        # 构建响应内容
-        content_blocks = [
-            TextBlock(
-                type="text",
-                text=(
-                    "Successfully enter the qa agent mode to "
-                    "answer the user's question. "
-                    "All the file operations, including "
-                    "read/write/modification, should be done in directory "
-                    f"{self.task_dir}"
-                    f"Current available tools: {available_tool_names}"
-                ),
-            ),
-        ]
-        
-        # 如果有 GitHub 错误，添加错误信息
-        if github_error_message:
-            content_blocks.append(
-                TextBlock(
-                    type="text",
-                    text=github_error_message,
-                ),
-            )
-        
-        return ToolResponse(
-            metadata={"success": True},
-            content=content_blocks,
-        )

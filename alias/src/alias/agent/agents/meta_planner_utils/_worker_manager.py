@@ -40,7 +40,6 @@ WorkerManager 是 MetaPlanner 的"人事部门"：
 worker_pool 是一个字典，存储所有可用的 Worker：
 {
     "browser_worker": (WorkerInfo, BrowserWorker实例),
-    "ds_worker": (WorkerInfo, DSWorker实例),
     "custom_worker": (WorkerInfo, ReActWorker实例),
 }
 
@@ -62,9 +61,8 @@ worker_pool 是一个字典，存储所有可用的 Worker：
 ┌─────────────────────────────────────────────────────────────────────────────┐
 │                          WorkerManager                                       │
 │                                                                              │
-│  subtask_1: "搜索股价" → browser_worker                                      │
-│  subtask_2: "分析数据" → ds_worker                                           │
-│  subtask_3: "生成报告" → custom_worker                                       │
+│  subtask_1: "搜索资料" → browser_worker                                      │
+│  subtask_2: "整理要点" → custom_worker                                       │
 │                                                                              │
 └─────────────────────────────────────────────────────────────────────────────┘
 
@@ -86,8 +84,8 @@ from agentscope.module import StateModule  # 状态模块基类
 from agentscope.memory import InMemoryMemory, MemoryBase, LongTermMemoryBase
 from agentscope.tool import ToolResponse
 from agentscope.message import Msg, TextBlock, ToolUseBlock, ToolResultBlock
-from agentscope.model import ChatModelBase, DashScopeChatModel
-from agentscope.formatter import FormatterBase, DashScopeChatFormatter
+from agentscope.model import ChatModelBase, OpenAIChatModel
+from agentscope.formatter import FormatterBase, OpenAIChatFormatter
 
 # 项目内部导入
 from alias.runtime.alias_sandbox import AliasSandbox
@@ -96,8 +94,6 @@ from alias.agent.agents._react_worker import ReActWorker
 from alias.agent.utils.constants import (
     WORKER_MAX_ITER,
     DEFAULT_BROWSER_WORKER_NAME,
-    DEFAULT_DS_AGENT_NAME,
-    DEFAULT_DEEP_RESEARCH_AGENT_NAME,
 )
 from alias.agent.agents.common_agent_utils import WorkerResponse
 
@@ -164,9 +160,16 @@ def rebuild_reactworker(
     model = (
         model
         if model
-        else DashScopeChatModel(
-            api_key=os.environ.get("DASHSCOPE_API_KEY"),
-            model_name="qwen3-max-preview",
+        else OpenAIChatModel(
+            base_url=os.environ.get(
+                "OPENAI_BASE_URL",
+                "http://localhost:8317/v1",
+            ),
+            api_key=os.environ.get(
+                "OPENAI_API_KEY",
+                "ABC-12dafasdfasdf8883236",
+            ),
+            model_name=os.environ.get("OPENAI_MODEL_NAME", "gpt-5.3-codex"),
             stream=True,
         )
     )
@@ -176,7 +179,7 @@ def rebuild_reactworker(
         name=worker_info.worker_name,
         sys_prompt=worker_info.sys_prompt,
         model=model,
-        formatter=formatter if formatter else DashScopeChatFormatter(),
+        formatter=formatter if formatter else OpenAIChatFormatter(),
         toolkit=new_toolkit,
         memory=InMemoryMemory() if memory is None else memory,
         max_iters=WORKER_MAX_ITER,
@@ -274,8 +277,6 @@ class WorkerManager(StateModule):
     【内置 Worker】
     系统预先创建了一些常用的 Worker：
     - browser_worker：浏览器操作
-    - ds_worker：数据科学任务
-    - deep_research_worker：深度研究
 
     【动态 Worker】
     根据任务需要，可以动态创建自定义 Worker：
@@ -346,11 +347,7 @@ class WorkerManager(StateModule):
                 worker_info = WorkerInfo(**v)
 
                 # 跳过内置 Agent（它们有专门的重建逻辑）
-                if k in [
-                    DEFAULT_DEEP_RESEARCH_AGENT_NAME,
-                    DEFAULT_DS_AGENT_NAME,
-                    DEFAULT_BROWSER_WORKER_NAME,
-                ]:
+                if k in [DEFAULT_BROWSER_WORKER_NAME]:
                     continue
 
                 # 创建新的工具包

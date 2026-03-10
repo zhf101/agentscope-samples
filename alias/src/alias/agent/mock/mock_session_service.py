@@ -131,10 +131,7 @@ class SessionEntity:
 
     【聊天模式】
     - general: 通用聊天
-    - dr: 深度研究
     - browser: 浏览器操作
-    - bi: 商业智能
-    - finance: 金融分析
     """
 
     # 类属性声明（类型注解）
@@ -154,10 +151,7 @@ class SessionEntity:
         self,
         chat_mode: Literal[
             "general",
-            "dr",
             "browser",
-            "bi",
-            "finance",
         ] = "general",
         data_config: List | None = None,
         use_long_term_memory_service: bool = False,

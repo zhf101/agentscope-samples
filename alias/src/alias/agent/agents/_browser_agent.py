@@ -179,12 +179,6 @@ from alias.agent.agents.common_agent_utils import (
 )
 
 # 导入浏览器辅助功能
-from alias.agent.agents._build_in_helper_browser._image_understanding import (
-    image_understanding,  # 图像理解工具
-)
-from alias.agent.agents._build_in_helper_browser._video_understanding import (
-    video_understanding,  # 视频理解工具
-)
 from alias.agent.agents._build_in_helper_browser._file_download import (
     file_download,  # 文件下载工具
 )
@@ -703,9 +697,7 @@ class BrowserAgent(AliasAgentBase):
         self.toolkit.register_tool_function(self.browser_subtask_manager)
 
         # 如果模型支持多模态（图像/视频），注册相应的理解工具
-        if self._supports_multimodal():
-            self._register_skill_tool(image_understanding)  # 图像理解
-            self._register_skill_tool(video_understanding)  # 视频理解
+        # 多模态工具已在 cdp 精简版中移除
 
         # 注册文件下载和表单填写工具（所有模型都需要）
         self._register_skill_tool(file_download)  # 文件下载
@@ -895,14 +887,9 @@ class BrowserAgent(AliasAgentBase):
         - gpt-5 系列：OpenAI 的 GPT-5
 
         Returns:
-            bool: 如果模型支持多模态输入返回 True，否则返回 False。
+            bool: cdp 精简版固定关闭多模态，始终返回 False。
         """
-        return (
-            self.model.model_name.startswith("qvq")    # 阿里视频理解模型
-            or "-vl" in self.model.model_name          # 视觉语言模型
-            or "4o" in self.model.model_name           # GPT-4o
-            or "gpt-5" in self.model.model_name        # GPT-5
-        )
+        return False
 
     # pylint: disable=R0912,R0915
     # R0912: 分支太多（太多 if/elif）

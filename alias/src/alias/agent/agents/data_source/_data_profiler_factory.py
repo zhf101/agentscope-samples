@@ -3,6 +3,7 @@
 
 import os
 import json
+from pathlib import Path
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
@@ -12,9 +13,6 @@ from sqlalchemy import inspect, text, create_engine
 from agentscope.message import Msg
 
 from alias.agent.agents.data_source._typing import SourceType
-from alias.agent.agents.ds_agent_utils import (
-    get_prompt_from_file,
-)
 from alias.agent.utils.llm_call_manager import (
     LLMCallManager,
 )
@@ -80,14 +78,8 @@ class BaseDataProfiler(ABC):
             Loaded prompt template as string
         """
         prompt_file_name = self.source_types_2_prompts[source_type]
-        prompt = get_prompt_from_file(
-            os.path.join(
-                self._PROFILE_PROMPT_BASE_PATH,
-                prompt_file_name,
-            ),
-            False,
-        )
-        return prompt
+        prompt_path = Path(self._PROFILE_PROMPT_BASE_PATH) / prompt_file_name
+        return prompt_path.read_text(encoding="utf-8")
 
     async def generate_profile(self) -> Dict[str, Any]:
         """Generate a complete data profile
