@@ -62,6 +62,7 @@ class LocalStorage(BaseStorage):
         src_path = self._normalize_path(src)
         dst_path = self._normalize_path(dst)
 
+
         if not src_path.exists():
             raise FileNotFoundError(f"Source path not found: {src_path}")
 
@@ -69,12 +70,12 @@ class LocalStorage(BaseStorage):
             return
 
         try:
-        if src_path.is_dir():
-            if dst_path.exists() and dst_path.is_dir():
-                shutil.rmtree(dst_path)
-            shutil.copytree(
-                src_path,
-                dst_path,
+            if src_path.is_dir():
+                if dst_path.exists() and dst_path.is_dir():
+                    shutil.rmtree(dst_path)
+                shutil.copytree(
+                    src_path,
+                    dst_path,
                     symlinks=True,
                     dirs_exist_ok=True,
                 )

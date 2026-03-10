@@ -244,6 +244,26 @@ class SecurityConfig(BaseSettings):
         description="Access token expire time (minutes)",
     )
 
+    # ==========================================================================
+    # 简化鉴权（仅用户名）
+    # ==========================================================================
+    SIMPLE_AUTH_ENABLED: bool = Field(
+        default=False,
+        description="Enable simple auth by username header (no JWT required).",
+    )
+    SIMPLE_AUTH_HEADER: str = Field(
+        default="X-User-Name",
+        description="Header name carrying username for simple auth.",
+    )
+    SIMPLE_AUTH_AUTO_CREATE: bool = Field(
+        default=True,
+        description="Auto create user when simple auth username not found.",
+    )
+    SIMPLE_AUTH_EMAIL_DOMAIN: str = Field(
+        default="simple.local",
+        description="Email domain used to generate placeholder emails.",
+    )
+
 
 class ServerConfig(BaseSettings):
     """

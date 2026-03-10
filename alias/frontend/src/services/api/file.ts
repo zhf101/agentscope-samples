@@ -6,6 +6,7 @@ import {
 } from "@/types/api";
 import axios, { AxiosRequestConfig } from "axios";
 import { request } from "./request";
+import { attachSimpleAuthHeader } from "@/utils/simpleAuth";
 
 // Create a dedicated axios instance for file operations
 const fileInstance = axios.create({
@@ -21,6 +22,9 @@ fileInstance.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
+  config.headers = attachSimpleAuthHeader(
+    (config.headers || {}) as Record<string, any>,
+  );
   return config;
 });
 

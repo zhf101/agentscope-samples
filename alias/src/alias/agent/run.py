@@ -183,12 +183,12 @@ MODEL_FORMATTER_MAPPING = {
     # 默认配置
     "default": [
         # OpenAIChatModel 参数说明：
-        # - base_url: API 地址
+        # - client_kwargs: OpenAI 客户端参数（如 base_url）
         # - api_key: API 密钥
         # - model_name: 模型名称
         # - stream: 是否使用流式输出（逐字返回，而不是等全部生成完）
         OpenAIChatModel(
-            base_url=OPENAI_BASE_URL,
+            client_kwargs={"base_url": OPENAI_BASE_URL},
             api_key=OPENAI_API_KEY,
             model_name=OPENAI_MODEL_NAME,
             stream=True,  # 流式输出，用户体验更好
@@ -199,7 +199,7 @@ MODEL_FORMATTER_MAPPING = {
     # 保持向后兼容的配置
     OPENAI_MODEL_NAME: [
         OpenAIChatModel(
-            base_url=OPENAI_BASE_URL,
+            client_kwargs={"base_url": OPENAI_BASE_URL},
             api_key=OPENAI_API_KEY,
             model_name=OPENAI_MODEL_NAME,
             stream=True,

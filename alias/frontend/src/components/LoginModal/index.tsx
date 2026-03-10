@@ -2,6 +2,7 @@ import { Button, Modal } from "@agentscope-ai/design";
 import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./index.module.scss";
+import { getSimpleUsername } from "@/utils/simpleAuth";
 
 const LoginModal = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(true);
@@ -19,7 +20,8 @@ const LoginModal = () => {
   };
   if (
     localStorage.getItem("access_token") === null &&
-    localStorage.getItem("refresh_token") === null
+    localStorage.getItem("refresh_token") === null &&
+    !getSimpleUsername()
   )
     return (
       <Modal

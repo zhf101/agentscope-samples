@@ -18,6 +18,8 @@ FastAPI 依赖注入（Dependencies）定义文件 - 新手教学注释版
 """
 
 from typing import Annotated, Optional
+import hashlib
+import re
 
 from fastapi import Depends, Header
 from fastapi.security import OAuth2PasswordBearer
@@ -29,12 +31,14 @@ from alias.server.exceptions.base import PermissionDeniedError
 from alias.server.exceptions.service import AccessDeniedError
 from alias.server.models.user import User
 from alias.server.services.auth_service import AuthService
+from alias.server.services.user_service import UserService
 
 # OAuth2PasswordBearer 会从请求头 `Authorization: Bearer <token>` 里取 token。
 # tokenUrl 用于 OpenAPI 文档展示“去哪里换取 token”。
 # 小白提示：它不会帮你验证 token，只负责“提取字符串”。
 reusable_oauth2 = OAuth2PasswordBearer(
     tokenUrl=f"{settings.API_V1_STR}/login/",
+    auto_error=False,
 )
 
 # Annotated + Depends 是 FastAPI 推荐的依赖写法。
@@ -44,18 +48,60 @@ SessionDep = Annotated[AsyncSession, Depends(get_session)]
 
 # TokenDep 表示：“这个参数需要一个 token 字符串，由 reusable_oauth2 提供”。
 # 小白提示：这一步只拿到字符串，不做权限校验。
-TokenDep = Annotated[str, Depends(reusable_oauth2)]
+TokenDep = Annotated[Optional[str], Depends(reusable_oauth2)]
 
 
-async def get_current_user(session: SessionDep, token: TokenDep) -> User:
+def _build_simple_auth_email(username: str) -> str:
+    cleaned = re.sub(r"[^A-Za-z0-9_.+-]+", "_", username.strip())
+    cleaned = re.sub(r"_+", "_", cleaned).strip("._-")
+    if not cleaned:
+        cleaned = "user"
+    # 保留一定长度，避免超长邮箱
+    if len(cleaned) > 200:
+        cleaned = cleaned[:200]
+    suffix = hashlib.sha1(username.encode("utf-8")).hexdigest()[:8]
+    local_part = f"{cleaned}.{suffix}"
+    domain = settings.SIMPLE_AUTH_EMAIL_DOMAIN
+    return f"{local_part}@{domain}"
+
+
+async def get_current_user(
+    session: SessionDep,
+    token: TokenDep,
+    simple_username: Optional[str] = Header(
+        None,
+        alias=settings.SIMPLE_AUTH_HEADER,
+    ),
+) -> User:
     """
     根据 token 获取当前用户对象。
 
     常见使用方式：
     async def some_api(current_user: CurrentUser): ...
     """
-    # AuthService 会解析 token 并查询数据库得到 User。
-    return await AuthService(session=session).get_user_by_token(token=token)
+    # 默认 JWT 鉴权路径（优先）
+    if token:
+        return await AuthService(session=session).get_user_by_token(token=token)
+
+    # 简化鉴权：从用户名头部获取用户
+    if settings.SIMPLE_AUTH_ENABLED and simple_username:
+        user_service = UserService(session=session)
+        user = await user_service.get_first_by_field(
+            "username",
+            simple_username,
+        )
+        if user is None:
+            if not settings.SIMPLE_AUTH_AUTO_CREATE:
+                raise AccessDeniedError(message="Unknown user")
+            email = _build_simple_auth_email(simple_username)
+            user = await user_service.create_user(
+                email=email,
+                username=simple_username,
+                password=None,
+            )
+        return user
+
+    raise AccessDeniedError(message="Missing authentication")
 
 
 # CurrentUser 是一个“类型别名依赖”，便于在路由函数中直接复用。

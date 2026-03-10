@@ -2166,7 +2166,7 @@ class BrowserAgent(AliasAgentBase):
                         "Tool call SUCCESS."
                         f" Current subtask remains: {self.current_subtask}"
                     ),
-                ],
+                ),
             ],
         )
 

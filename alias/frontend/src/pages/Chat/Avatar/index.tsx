@@ -19,6 +19,7 @@ const Avatar: React.FC<AvatarProps> = ({ userInfo }) => {
   const logOutHandle = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
+    localStorage.removeItem("simple_username");
     navigate("/login?mode=login");
   };
   return (

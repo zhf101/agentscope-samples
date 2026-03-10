@@ -161,10 +161,12 @@ def rebuild_reactworker(
         model
         if model
         else OpenAIChatModel(
-            base_url=os.environ.get(
-                "OPENAI_BASE_URL",
-                "http://localhost:8317/v1",
-            ),
+            client_kwargs={
+                "base_url": os.environ.get(
+                    "OPENAI_BASE_URL",
+                    "http://localhost:8317/v1",
+                ),
+            },
             api_key=os.environ.get(
                 "OPENAI_API_KEY",
                 "ABC-12dafasdfasdf8883236",
@@ -406,16 +408,6 @@ class WorkerManager(StateModule):
             agent: 要注册的 Worker
             description: Worker 的功能描述
             worker_type: Worker 类型（built-in 或 dynamic-built）
-        """
-        Handles name conflicts by appending version numbers when necessary.
-
-        Args:
-            agent (ReActAgent):
-                The worker agent to register
-            description (Optional[str]):
-                Description of the worker's capabilities
-            worker_type (Literal["built-in", "dynamic-built"]):
-                Type of worker agent
         """
         worker_info = WorkerInfo(
             worker_name=agent.name,

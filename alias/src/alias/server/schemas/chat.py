@@ -37,9 +37,11 @@ class ChatMode(str, Enum):
 
     - GENERAL: 通用模式（元规划器）
     - BROWSER: 浏览器自动化模式
+    - DATASCIENCE: 数据科学模式
     """
     GENERAL = "general"
     BROWSER = "browser"
+    DATASCIENCE = "datascience"
 
 
 class LanguageType(str, Enum):

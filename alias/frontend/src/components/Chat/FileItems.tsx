@@ -6,6 +6,7 @@ import iconPdf from "@/assets/icons/files/pdf.svg";
 import iconXml from "@/assets/icons/files/xml.svg";
 import { FileItem } from "@/types/message";
 import { formatFileSize } from "@/utils/fileNameUtils";
+import { attachSimpleAuthHeader, getSimpleUsername } from "@/utils/simpleAuth";
 import React from "react";
 import { useLocation, useParams } from "react-router-dom";
 
@@ -80,16 +81,19 @@ export const FileItems: React.FC<FileItemsProps> = ({ files }) => {
         localStorage.getItem("access_token") ||
         import.meta.env.VITE_API_ACCESS_TOKEN ||
         import.meta.env.VITE_API_TOKEN;
+      const simpleUsername = getSimpleUsername();
       if (!token) {
-        console.error("No access token available");
-        return;
+        if (!simpleUsername) {
+          console.error("No access token or simple auth username available");
+          return;
+        }
       }
 
       // Create a request with authentication header
       fetch(url, {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+        headers: attachSimpleAuthHeader({
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
+        }),
       })
         .then((response) => response.blob())
         .then((blob) => {

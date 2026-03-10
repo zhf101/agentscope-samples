@@ -55,6 +55,7 @@ FastAPI 是一个现代、高性能的 Python Web 框架，用于构建 API。
 # 导入模块
 # ==============================================================================
 from contextlib import asynccontextmanager
+import asyncio
 
 # FastAPI 核心导入
 from fastapi import FastAPI
@@ -172,7 +173,7 @@ async def lifespan(_app: FastAPI):
     # -------------------------------------------------------------------------
     # 启动阶段
     # -------------------------------------------------------------------------
-    print("🚀 Starting Alias API Server...")
+    print("Starting Alias API Server...")
     
     # 设置日志
     setup_logger()
@@ -187,7 +188,10 @@ async def lifespan(_app: FastAPI):
     
     # 检查 Redis 连接
     # Redis 用于缓存和会话存储
-    await redis_client.ping()
+    try:
+        await asyncio.wait_for(redis_client.ping(), timeout=1)
+    except Exception as e:
+        print(f"Redis ping failed: {e}. Continuing without Redis.")
 
     # 初始化 API 限流器（如果可用）
     # 防止单个用户过度调用 API

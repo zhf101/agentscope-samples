@@ -1,5 +1,6 @@
 import axios, { AxiosInstance, AxiosRequestConfig } from "axios";
 import { ApiResponse } from "../types/conversation";
+import { attachSimpleAuthHeader } from "@/utils/simpleAuth";
 
 const BASE_URL = import.meta.env.VITE_API_URL || "http://localhost:8000";
 const USER_PROFILING_URL =
@@ -82,6 +83,9 @@ class Request {
         if (token) {
           config.headers.Authorization = `Bearer ${token}`;
         }
+        config.headers = attachSimpleAuthHeader(
+          (config.headers || {}) as Record<string, any>,
+        );
         return config;
       },
       (error) => {
@@ -185,10 +189,10 @@ class Request {
       try {
         const response = await fetch(`${BASE_URL}${url}`, {
           method: "POST",
-          headers: {
+          headers: attachSimpleAuthHeader({
             "Content-Type": "application/json",
             Authorization: `Bearer ${this.getAccessToken()}`,
-          },
+          }),
           body: body ? JSON.stringify(body) : undefined,
           signal: abortController?.signal,
         });

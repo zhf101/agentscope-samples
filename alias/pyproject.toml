@@ -3,7 +3,7 @@ name = "alias"
 version = "0.2.0"
 description = ""
 readme = "README.md"
-requires-python = ">=3.10"
+requires-python = "==3.12"
 dependencies = [
     "aiohttp>=3.11.16",
     "docker>=7.1.0",
