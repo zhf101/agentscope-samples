@@ -1,4 +1,5 @@
 import react from "@vitejs/plugin-react";
+import fs from "fs";
 import path from "path";
 import { defineConfig, loadEnv } from "vite";
 
@@ -6,9 +7,24 @@ import { defineConfig, loadEnv } from "vite";
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const apiUrl = env.VITE_API_URL || "http://localhost:8000";
+  const katexVersion = (() => {
+    try {
+      const katexPkgPath = path.resolve(__dirname, "node_modules/katex/package.json");
+      const katexPkg = JSON.parse(fs.readFileSync(katexPkgPath, "utf-8")) as {
+        version?: string;
+      };
+      return katexPkg.version || "0.16.22";
+    } catch {
+      return "0.16.22";
+    }
+  })();
+  const versionDefine = JSON.stringify(katexVersion);
 
   return {
     plugins: [react()],
+    define: {
+      __VERSION__: versionDefine,
+    },
     css: {
       modules: {
         localsConvention: "camelCase",
@@ -44,6 +60,11 @@ export default defineConfig(({ mode }) => {
         "@copilotkit/shared",
         "@rc-component/util",
       ],
+      esbuildOptions: {
+        define: {
+          __VERSION__: versionDefine,
+        },
+      },
     },
   };
 });

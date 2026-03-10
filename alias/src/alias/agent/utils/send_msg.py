@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=W0212,R0911
+"""
+消息发送工具（新手教学注释版）。
+
+把字符串/Msg 转换为后端消息模型并写入 SessionService。
+"""
+
 import json
 import os
 import uuid
@@ -52,7 +58,7 @@ def _create_assistant_message(
     last: bool,
     name: Optional[str] = None,
 ) -> BaseMessage:
-    """Create message with appropriate type and content"""
+    """按消息类型构建对应的后端消息对象。"""
     assistant_msg = _MESSAGE_TYPE_MAPPING[msg_type]()
     assistant_msg.status = MessageState.RUNNING
     if msg_type == MessageType.CLARIFICATION:
@@ -112,7 +118,7 @@ def _create_assistant_message(
 
 
 def _determine_message_type(content_to_send: Union[str, Msg]) -> MessageType:
-    """Determine the type of message to send"""
+    """根据内容块自动判断消息类型。"""
     if isinstance(content_to_send, str):
         return MessageType.RESPONSE
     if (
@@ -158,6 +164,7 @@ async def send_as_msg(
     db_msg_id: Optional[uuid.UUID] = None,
     last: bool = True,
 ) -> Optional[uuid.UUID]:
+    """发送消息到会话，并返回数据库消息 ID。"""
     if content_to_send is None or (
         isinstance(content_to_send, Msg) and len(content_to_send.content) == 0
     ):

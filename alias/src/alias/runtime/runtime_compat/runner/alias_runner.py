@@ -1,12 +1,23 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=unused-argument
+"""Alias Runtime 兼容 Runner。
+
+这个类把 AgentScope Runtime 的 Runner 协议接到 Alias 现有后端服务上：
+1. 对外提供 Runtime 期望的 stream_query/stream_query_native。
+2. 对内复用 Alias 的 ChatService、ConversationService、任务管理和数据库。
+3. 在两套协议之间做字段适配与生命周期管理。
+"""
+
 from __future__ import annotations
 
 import asyncio
 import uuid
 from typing import Any, AsyncGenerator, Dict, Optional, Union
 
-from fastapi_limiter import FastAPILimiter
+try:
+    from fastapi_limiter import FastAPILimiter
+except ImportError:  # fastapi-limiter>=0.2.0 removed this symbol
+    FastAPILimiter = None
 from pydantic import ValidationError
 
 from agentscope_runtime.engine.runner import Runner
@@ -36,6 +47,8 @@ from alias.server.utils.redis import redis_client
 
 
 class AliasRunner(Runner):
+    """连接 AgentScope Runtime 与 Alias 业务服务的桥接 Runner。"""
+
     FRAMEWORK_TYPE = "Alias"
 
     def __init__(
@@ -51,11 +64,13 @@ class AliasRunner(Runner):
         self._session_conv_cache: Dict[str, uuid.UUID] = {}
 
     async def stop(self) -> None:
+        # 避免重复 stop：只有在 start 过（_health=True）时才执行父类 stop。
         if not getattr(self, "_health", False):
             return
         await super().stop()
 
     async def query_handler(self, *args: Any, **kwargs: Any) -> Any:
+        # 这是对 Alias ChatService 的最薄一层封装，统一 runner 内部调用入口。
         user_id: uuid.UUID = kwargs["user_id"]
         conversation_id: uuid.UUID = kwargs["conversation_id"]
         chat_request: ChatRequest = kwargs["chat_request"]
@@ -71,6 +86,7 @@ class AliasRunner(Runner):
         return response_gen
 
     async def init_handler(self, *args: Any, **kwargs: Any) -> None:
+        # Runner 启动时初始化 Alias 运行时依赖：日志、数据库、任务调度、限流器。
         print("🚀 Starting Alias API Server...")
         setup_logger()
 
@@ -78,14 +94,22 @@ class AliasRunner(Runner):
         await task_manager.start()
 
         await redis_client.ping()
-        try:
-            await FastAPILimiter.init(redis_client)
-        except Exception as exc:
-            print(f"redis init error: {str(exc)}")
+        if FastAPILimiter is not None:
+            try:
+                await FastAPILimiter.init(redis_client)
+            except Exception as exc:
+                print(f"redis init error: {str(exc)}")
+        else:
+            print(
+                "FastAPILimiter is unavailable in installed "
+                "fastapi-limiter version; "
+                "rate limiter initialization is skipped.",
+            )
 
         print("✅ Alias startup complete.")
 
     async def shutdown_handler(self, *args: Any, **kwargs: Any) -> None:
+        # 与 init_handler 对应的资源释放路径。
         print("Executing Alias shutdown logic...")
         await task_manager.stop()
         await close_database()
@@ -93,6 +117,13 @@ class AliasRunner(Runner):
 
     @staticmethod
     def _extract_text_from_agent_request(req_dict: Dict[str, Any]) -> str:
+        """从 AgentRequest 的多种输入形态中提取最终用户文本。
+
+        兼容三类常见输入：
+        - input 是纯字符串
+        - input 是 message 列表，content 为字符串
+        - input 是 message 列表，content 为 block 列表（type=text）
+        """
         agent_input = req_dict.get("input")
         if isinstance(agent_input, str):
             return agent_input
@@ -113,6 +144,7 @@ class AliasRunner(Runner):
 
     @staticmethod
     def _to_uuid(val: Any) -> Optional[uuid.UUID]:
+        # 容错 UUID 解析，失败时返回 None，调用方再决定兜底策略。
         if val is None:
             return None
         if isinstance(val, uuid.UUID):
@@ -124,6 +156,7 @@ class AliasRunner(Runner):
 
     @staticmethod
     def _stable_uuid_from_string(s: str) -> uuid.UUID:
+        # 将任意稳定字符串映射为稳定 UUID，便于无 user_id 时复用会话身份。
         return uuid.uuid5(uuid.NAMESPACE_DNS, f"alias::{s}")
 
     async def _get_or_create_conversation_id(
@@ -131,6 +164,12 @@ class AliasRunner(Runner):
         session_id: str,
         user_uuid: uuid.UUID,
     ) -> uuid.UUID:
+        """按 session 维度复用 conversation_id，不存在则创建。
+
+        设计目的：
+        - WebUI 常只传 session_id，不总是显式传 conversation_id。
+        - 同一 session 连续请求应该落到同一会话，保持上下文。
+        """
         if session_id in self._session_conv_cache:
             return self._session_conv_cache[session_id]
 
@@ -164,6 +203,12 @@ class AliasRunner(Runner):
         request: Union[AgentRequest, dict],
         **kwargs: Any,
     ) -> AsyncGenerator[Any, None]:
+        """原生转发模式：尽量不做协议改写，直接输出 Alias 原始事件。
+
+        与 stream_query 的区别：
+        - stream_query_native 返回 Alias 风格 chunk（最后附加 [DONE]）。
+        - stream_query 会进一步转为 AgentScope 标准 Message/Content 事件。
+        """
         if not self._health:
             raise RuntimeError(
                 "Runner has not been started. Please call "
@@ -187,6 +232,7 @@ class AliasRunner(Runner):
         )
 
         if user_id is None or conversation_id is None:
+            # Native 模式要求上游传齐上下文；不自动创建会话，避免语义不透明。
             yield {
                 "error": "missing_context",
                 "code": 422,
@@ -225,6 +271,7 @@ class AliasRunner(Runner):
             if asyncio.iscoroutine(result):
                 result = await result
 
+            # 透明转发 Alias 输出流。
             async for chunk in result:
                 yield chunk
 
@@ -248,6 +295,7 @@ class AliasRunner(Runner):
     ) -> AsyncGenerator[Any, None]:
         # pylint: disable=too-many-branches
         # pylint: disable=too-many-statements
+        """Runtime 标准模式：对 Alias 结果做完整协议适配。"""
         if not self._health:
             raise RuntimeError(
                 "Runner has not been started. Please call "
@@ -269,6 +317,7 @@ class AliasRunner(Runner):
         session_id = req_dict.get("session_id") or f"session_{uuid.uuid4()}"
         seq_gen = SequenceNumberGenerator()
 
+        # 先发 AgentResponse created/in_progress，符合 Runtime 前端协议。
         response = AgentResponse(id=request_id)
         response.session_id = session_id
         yield seq_gen.yield_with_sequence(response)
@@ -292,6 +341,7 @@ class AliasRunner(Runner):
             str(raw_user_id),
         )
 
+        # 未显式传会话 ID 时，基于 session 自动创建/复用。
         conversation_id = self._to_uuid(req_dict.get("conversation_id"))
         if conversation_id is None:
             try:
@@ -312,6 +362,7 @@ class AliasRunner(Runner):
         try:
             req_chat_mode = req_dict.get("chat_mode") or self.default_chat_mode
 
+            # 将 Runtime 请求压缩为 Alias ChatRequest 所需字段。
             chat_request_obj = ChatRequest.model_validate(
                 {
                     "query": user_text,
@@ -336,6 +387,7 @@ class AliasRunner(Runner):
             if asyncio.iscoroutine(result):
                 result = await result
 
+            # 核心适配：Alias 原始流 -> Runtime Message/Content 标准流。
             async for event in adapt_alias_message_stream(result):
                 try:
                     if (
@@ -347,6 +399,7 @@ class AliasRunner(Runner):
                     # Best-effort bookkeeping
                     pass
 
+                # 每个事件都带 sequence，确保前端可按序消费。
                 yield seq_gen.yield_with_sequence(event)
 
         except Exception as exc:
@@ -361,11 +414,13 @@ class AliasRunner(Runner):
             return
 
         try:
+            # 约定：最终 usage 从最后一条输出消息继承。
             if response.output:
                 response.usage = response.output[-1].usage
         except IndexError:
             # Avoid empty message
             pass
 
+        # 全链路完成。
         yield seq_gen.yield_with_sequence(response.completed())
         return

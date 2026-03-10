@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+"""
+任务管理器（TaskManager）- 新手教学注释版
+
+这个模块负责“管理正在运行的 asyncio 任务”，主要解决三个问题：
+1. 任务登记：创建任务后，如何找到它？
+2. 任务停止：用户点“停止生成”后，如何停掉对应任务？
+3. 分布式停止：如果任务不在当前进程，如何跨进程发停止信号？
+
+核心思路：
+- 本地内存字典 `_tasks`：保存当前进程内任务。
+- Redis 键 `task_stop:<task_id>`：作为跨进程停止信号。
+"""
+
 import asyncio
 import uuid
 from typing import Dict
@@ -10,7 +23,12 @@ from alias.server.utils.redis import redis_client
 
 @dataclass
 class TaskInfo:
-    """Task information."""
+    """
+    任务信息结构体（dataclass）。
+
+    dataclass 会自动帮你生成 __init__/__repr__ 等方法，
+    很适合这种“纯数据容器”。
+    """
 
     task_id: uuid.UUID
     task: asyncio.Task
@@ -18,26 +36,39 @@ class TaskInfo:
 
 
 class TaskManager:
-    """Task manager supporting task management, data waiting,
-    and distributed stop."""
+    """
+    任务管理器（单例模式）。
+
+    单例模式含义：整个进程里只保留一个 TaskManager 实例，
+    避免不同地方各自维护一份任务表导致状态不一致。
+    """
 
     _instance = None
 
     def __new__(cls, *args, **kwargs):
+        # __new__ 负责“创建对象实例”
+        # 这里通过判断 _instance 是否为空，实现单例。
         if cls._instance is None:
             cls._instance = super().__new__(cls)
         return cls._instance
 
     def __init__(self):
+        # 避免单例重复初始化。
         if hasattr(self, "_initialized"):
             return
+        # task_id -> TaskInfo 映射表
         self._tasks: Dict[uuid.UUID, TaskInfo] = {}  # type: ignore
+        # 后台监听协程任务（轮询 Redis 停止信号）
         self._stop_listener = None
         self._initialized = True
         logger.info("TaskManager initialized")
 
     async def start(self):
-        """Start task manager."""
+        """
+        启动任务管理器。
+
+        主要动作：启动一个后台监听任务，定期检查 Redis 是否有 stop 信号。
+        """
         if not self._stop_listener:
             self._stop_listener = asyncio.create_task(
                 self._listen_stop_signals(),
@@ -45,7 +76,13 @@ class TaskManager:
             logger.info("TaskManager started")
 
     async def stop(self):
-        """Stop task manager."""
+        """
+        停止任务管理器并清理所有已登记任务。
+
+        清理顺序：
+        1. 停掉 stop_listener
+        2. 逐个取消所有任务
+        """
         if self._stop_listener:
             self._stop_listener.cancel()
             try:
@@ -64,7 +101,13 @@ class TaskManager:
         task: asyncio.Task,
         user_id: uuid.UUID,
     ) -> None:
-        """Register task."""
+        """
+        注册任务到本地任务表。
+
+        什么时候调用？
+        - 一般在 ChatService 中 create_task 后立刻调用，
+          这样 stop_chat 才能根据 task_id 找到任务。
+        """
         task_info = TaskInfo(
             task_id=task_id,
             task=task,
@@ -77,12 +120,20 @@ class TaskManager:
         self,
         task_id: uuid.UUID,
     ) -> bool:
-        """Send stop signal."""
+        """
+        对外暴露的“停止任务”方法。
+
+        逻辑分两步：
+        1. 先尝试本地停止（任务可能就在当前进程）。
+        2. 本地找不到就写 Redis stop 信号，等待真正持有任务的进程处理。
+        """
         try:
             result = await self._stop_task(task_id)
             if result:
                 return True
 
+            # setex(key, ttl, value):
+            # 写入一个带过期时间（秒）的键，防止停机后垃圾键长期残留。
             await redis_client.setex(
                 f"task_stop:{task_id}",
                 300,
@@ -95,12 +146,20 @@ class TaskManager:
             return False
 
     async def _stop_task(self, task_id: uuid.UUID) -> bool:
-        """Execute task stop."""
+        """
+        真正执行“本地任务停止”。
+
+        返回值：
+        - True: 成功找到并处理了任务
+        - False: 本地不存在该任务
+        """
         task_info = self._tasks.pop(task_id, None)
         if not task_info:
             return False
 
         if not task_info.task.done():
+            # cancel() 只是“发出取消请求”，
+            # 还需要 await task 才能等待任务进入结束态。
             task_info.task.cancel()
             try:
                 await task_info.task
@@ -116,13 +175,21 @@ class TaskManager:
         return True
 
     async def _listen_stop_signals(self):
-        """Listen for stop signals."""
+        """
+        后台循环监听 Redis stop 信号。
+
+        为什么轮询？
+        - 当前实现简单直接：每秒检查一次本地 task_id 对应的 Redis 键。
+        - 生产中也可以升级为 Pub/Sub 等实时机制。
+        """
         try:
             while True:
+                # 拷贝 keys，避免迭代过程中字典变更问题。
                 task_ids = list(self._tasks.keys())
                 for task_id in task_ids:
                     stop_key = f"task_stop:{task_id}"
                     if await redis_client.exists(stop_key):
+                        # 收到 stop 信号就停止本地任务，并清除信号键。
                         await self._stop_task(task_id)
                         await redis_client.delete(stop_key)
                         continue
@@ -142,4 +209,5 @@ class TaskManager:
             logger.error(f"Error in signal listener: {traceback.format_exc()}")
 
 
+# 全局单例对象，供其他模块直接导入使用。
 task_manager = TaskManager()

@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+文本后处理 Hook（新手教学注释版）。
+
+用于限制超长工具输出，并按需落盘保存完整内容。
+"""
+
 import json
 import os.path
 import uuid
@@ -49,6 +55,7 @@ class TextPostHook:
             tool_response: The tool response to potentially truncate.
         """
 
+        # 可用字符预算，超限则触发截断。
         budget = self.budget
         append_hint = "\n\n[Content is too long and truncated....]"
 

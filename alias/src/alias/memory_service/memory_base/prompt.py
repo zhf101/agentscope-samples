@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+memory_service 提示词模板集合（新手教学注释版）。
+
+该文件集中定义会话总结、路线图抽取、工作流合并等任务用到的 Prompt 文本。
+"""
+
 SESSION_SUMMARY_PROMPT = """
 You are a task analysis expert. Please analyze the following session
 content and extract:

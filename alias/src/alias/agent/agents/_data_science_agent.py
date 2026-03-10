@@ -1,49 +1,172 @@
 # -*- coding: utf-8 -*-
-"""Data Science Agent"""
-import asyncio
-import json
-import os
-from functools import partial
-from typing import List, Dict, Optional, Any, Type, cast, Literal
-import uuid
+"""
+================================================================================
+DataScienceAgent - 数据科学 Agent
+================================================================================
 
-from agentscope.formatter import FormatterBase
-from agentscope.memory import MemoryBase
-from agentscope.message import Msg, TextBlock, ToolUseBlock, ToolResultBlock
-from agentscope.model import ChatModelBase
-from agentscope.tool import ToolResponse
-from agentscope.tracing import trace_reply
-from loguru import logger
-from pydantic import BaseModel, ValidationError, Field
-from tenacity import retry, stop_after_attempt, wait_fixed
+【什么是 DataScienceAgent？】
+DataScienceAgent 是一个专门做数据分析的智能助手：
+- 读取和分析数据文件（CSV、Excel 等）
+- 进行数据清洗和预处理
+- 执行统计分析
+- 创建可视化图表
+- 生成分析报告
 
-from alias.agent.agents import AliasAgentBase
+【与其他 Agent 的区别】
+- BrowserAgent：网页自动化（点击、填表、搜索）
+- DeepResearchAgent：深度研究（多轮搜索、假设验证）
+- DataScienceAgent：数据分析（统计、可视化、建模）
 
-from alias.agent.tools import AliasToolkit, share_tools
+【现实类比】
+想象一个"数据分析师"：
+1. 你提供一份销售数据表
+2. 分析师清洗数据（去除错误、填充缺失）
+3. 分析师统计汇总（销售额、增长率）
+4. 分析师画图表（柱状图、折线图）
+5. 分析师写报告（总结发现、给出建议）
+
+【工作流程图】
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              用户请求                                        │
+│                  "分析这份销售数据，告诉我趋势"                                 │
+└─────────────────────────────┬───────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                         DataScienceAgent                                     │
+│                                                                              │
+│  1. 数据加载                                                                 │
+│     - 读取数据文件                                                           │
+│     - 识别数据类型和结构                                                      │
+│                                                                              │
+│  2. 探索性分析（EDA）                                                         │
+│     - 查看数据概况                                                           │
+│     - 检查缺失值和异常值                                                      │
+│     - 计算基本统计量                                                         │
+│                                                                              │
+│  3. 数据处理                                                                 │
+│     - 清洗数据                                                               │
+│     - 转换格式                                                               │
+│     - 创建新特征                                                             │
+│                                                                              │
+│  4. 分析建模                                                                 │
+│     - 统计分析                                                               │
+│     - 机器学习建模（可选）                                                    │
+│     - 生成预测                                                               │
+│                                                                              │
+│  5. 可视化                                                                   │
+│     - 创建图表                                                               │
+│     - 保存图片文件                                                           │
+│                                                                              │
+│  6. 报告生成                                                                 │
+│     - 整合分析结果                                                           │
+│     - 生成 HTML 报告                                                         │
+│                                                                              │
+└─────────────────────────────┬───────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                              分析报告                                        │
+│                    "销售趋势分析报告.html"                                     │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+【核心技术概念】
+1. 数据源管理（DataSourceManager）：
+   - 统一管理各种数据文件
+   - 自动识别文件格式
+
+2. 场景选择（Scenario Selection）：
+   - 探索性数据分析（EDA）
+   - 数据建模（Modeling）
+   - 数据计算（Computation）
+
+3. TODO 管理：
+   - 跟踪分析进度
+   - 逐步完成任务
+
+4. 代码执行：
+   - 在沙箱中运行 Python 代码
+   - 使用 Jupyter 内核执行
+
+【学习要点】
+1. 数据分析流程
+2. Jupyter 内核交互
+3. 动态提示词选择
+4. 状态管理和恢复
+"""
+# Python 标准库导入
+import asyncio      # 异步 I/O
+import json         # JSON 处理
+import os           # 操作系统接口
+from functools import partial  # 偏函数
+from typing import List, Dict, Optional, Any, Type, cast, Literal  # 类型提示
+import uuid         # UUID 生成
+
+# AgentScope 框架导入
+from agentscope.formatter import FormatterBase  # 消息格式化器
+from agentscope.memory import MemoryBase  # 记忆基类
+from agentscope.message import Msg, TextBlock, ToolUseBlock, ToolResultBlock  # 消息类
+from agentscope.model import ChatModelBase  # 聊天模型基类
+from agentscope.tool import ToolResponse  # 工具响应
+from agentscope.tracing import trace_reply  # 追踪装饰器
+
+# 第三方库导入
+from loguru import logger  # 日志库
+from pydantic import BaseModel, ValidationError, Field  # 数据验证
+from tenacity import retry, stop_after_attempt, wait_fixed  # 重试机制
+
+# 项目内部导入
+from alias.agent.agents import AliasAgentBase  # Agent 基类
+from alias.agent.tools import AliasToolkit, share_tools  # 工具包
 from alias.agent.agents.common_agent_utils import (
-    get_user_input_to_mem_pre_reply_hook,
+    get_user_input_to_mem_pre_reply_hook,  # 用户输入钩子
 )
-from alias.agent.agents.data_source.data_source import DataSourceManager
+from alias.agent.agents.data_source.data_source import DataSourceManager  # 数据源管理器
+
+# 数据科学工具导入
 from .ds_agent_utils import (
-    ReportGenerator,
-    LLMPromptSelector,
-    todo_write,
-    get_prompt_from_file,
-    files_filter_pre_reply_hook,
-    add_ds_specific_tool,
-    set_run_ipython_cell,
+    ReportGenerator,       # 报告生成器
+    LLMPromptSelector,     # LLM 提示词选择器
+    todo_write,            # TODO 写入工具
+    get_prompt_from_file,  # 从文件获取提示词
+    files_filter_pre_reply_hook,  # 文件过滤钩子
+    add_ds_specific_tool,  # 添加数据科学特定工具
+    set_run_ipython_cell,  # 设置 Jupyter 执行环境
 )
-from .ds_agent_utils.ds_config import PROMPT_DS_BASE_PATH
+from .ds_agent_utils.ds_config import PROMPT_DS_BASE_PATH  # 提示词基础路径
 
 
+# ==============================================================================
+# 数据模型定义
+# ==============================================================================
 class DefaultStructuredResponse(BaseModel):
+    """
+    默认结构化响应模型。
+
+    【为什么需要这个模型？】
+    当 Agent 完成分析后，需要返回一个结构化的结果。
+    这个模型定义了返回数据的格式。
+
+    这里只是一个占位符，实际使用时会根据任务生成更详细的结构。
+    """
     response: str = Field(
         description="Just a placeholder. "
         "Enter any character to trigger report generation",
     )
 
 
+# ==============================================================================
+# DataScienceAgent 类定义
+# ==============================================================================
 class DataScienceAgent(AliasAgentBase):
+    """
+    数据科学 Agent - 执行数据分析和建模任务。
+
+    【继承关系】
+    DataScienceAgent 继承自 AliasAgentBase：
+    - 获得基础的消息处理、工具调用、记忆管理能力
+    - 添加数据科学特定功能：数据分析、可视化、报告生成
+    """
     def __init__(
         self,
         name: str,
@@ -58,7 +181,23 @@ class DataScienceAgent(AliasAgentBase):
         state_saving_dir: Optional[str] = None,
         session_service: Any = None,
     ) -> None:
+        """
+        初始化数据科学 Agent。
+
+        【参数详解】
+        - name: Agent 名称
+        - model: 聊天模型（用于生成分析代码）
+        - formatter: 消息格式化器
+        - memory: 记忆组件
+        - toolkit: 工具包
+        - data_manager: 数据源管理器（管理数据文件）
+        - tmp_file_storage_dir: 临时文件存储目录
+        - max_iters: 最大迭代次数
+        """
+        # 思考函数名称
         self.think_function_name = "think"
+
+        # 调用父类初始化
         super().__init__(
             name=name,
             sys_prompt=sys_prompt,
@@ -71,14 +210,21 @@ class DataScienceAgent(AliasAgentBase):
             state_saving_dir=state_saving_dir,
         )
 
+        # ==================== 设置 Jupyter 执行环境 ====================
+        # 数据科学 Agent 在 Jupyter 内核中执行 Python 代码
         set_run_ipython_cell(self.toolkit.sandbox)
 
+        # ==================== 初始化属性 ====================
+        # TODO 列表：跟踪分析进度
         self.todo_list: List[Dict[str, Any]] = []
 
+        # 临时文件目录
         self.tmp_file_storage_dir = tmp_file_storage_dir
 
+        # 数据源管理器
         self.data_manager = data_manager
 
+        # 报告保存路径
         self.detailed_report_path = os.path.join(
             tmp_file_storage_dir,
             "detailed_report.html",

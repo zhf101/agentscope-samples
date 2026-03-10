@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 """
-API routers for user profiling service
+API 路由模块包入口（新手教学注释版）。
 """

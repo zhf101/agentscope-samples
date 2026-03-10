@@ -1,6 +1,9 @@
 # -*- coding: utf-8 -*-
+"""Agent 运行常量（新手教学注释版）。"""
+
 import os
 
+# 模型调用重试与 agent 迭代上限。
 MODEL_MAX_RETRIES = int(os.getenv("MODEL_MAX_RETRIES", "20"))
 PLANNER_MAX_ITER = int(os.getenv("AGENT_MAX_ITER", "100"))
 WORKER_MAX_ITER = int(os.getenv("WORKER_MAX_ITER", "50"))

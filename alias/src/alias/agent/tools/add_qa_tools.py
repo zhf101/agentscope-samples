@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+QA 模式工具注册（新手教学注释版）。
+
+主要接入：
+1) 本地 RAG 检索工具
+2) GitHub MCP 工具
+"""
+
 import os
 from typing import TYPE_CHECKING
 import traceback
@@ -105,6 +113,7 @@ async def add_qa_tools(
         )
     else:
         try:
+            # 注册 GitHub MCP 的仓库/代码/文件读取能力。
             github_client = HttpStatelessClient(
                 name="github",
                 transport="streamable_http",

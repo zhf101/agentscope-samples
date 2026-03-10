@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-User profiling API endpoints
+工具记忆 API（新手教学注释版）
 """
 from fastapi import APIRouter
 
@@ -40,6 +40,7 @@ async def retrieve_memory(request: dict):
       }'
     """
     logger.info(f"retrieve tool memory request received: {request}")
+    # 基础字段校验：uid/query 必填且 query 不能为空字符串。
     validate_request_data(
         request,
         ["uid", "query"],

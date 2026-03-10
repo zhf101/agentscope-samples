@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+记忆能力抽象基类（新手教学注释版）。
+
+所有 memory 实现都应继承 BaseMemory，并实现统一异步接口。
+"""
+
 from abc import ABC, abstractmethod
 from typing import Any, List, Union, Optional
 
@@ -6,34 +12,34 @@ from agentscope.message import Msg
 
 
 class BaseMemory(ABC):
-    """Base class for memory."""
+    """记忆系统统一抽象接口。"""
 
     def __init__(self):
         pass
 
     @abstractmethod
     async def retrieve(self, uid: str, query: str, **kwargs) -> Any | bool:
-        """retrieve memory"""
+        """按用户和查询条件检索记忆。"""
 
     @abstractmethod
     async def add_memory(self, uid: str, content: List[Msg], **kwargs) -> Any:
-        """Save content to memory."""
+        """写入记忆内容。"""
 
     @abstractmethod
     async def process_content(self, uid: str, content: Union[List[Msg], Msg]):
-        """extract info in content for memory."""
+        """从原始内容中提取可记忆信息。"""
 
     @abstractmethod
     async def delete(self, uid: str, key: Any) -> None:
-        """Delete part of memory by some criteria."""
+        """按条件删除部分记忆。"""
 
     @abstractmethod
     async def clear_memory(self, uid: str) -> None:
-        """Clear all memory."""
+        """清空用户全部记忆。"""
 
     @abstractmethod
     async def show_all_memory(self, uid: str) -> Any:
-        """Show all memory."""
+        """展示用户全部记忆。"""
 
     @abstractmethod
     async def record_action(

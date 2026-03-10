@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""Pickle 序列化器实现（新手教学注释版）。"""
+
 import pickle
 from typing import Any, Optional, Type, TypeVar
 
@@ -15,9 +17,10 @@ T = TypeVar("T")
 
 
 class PickleSerializer(BaseSerializer):
-    """Pickle serializer implementation."""
+    """把对象序列化为二进制 bytes，并支持反序列化。"""
 
     def __init__(self, protocol: int = pickle.HIGHEST_PROTOCOL):
+        # protocol 越新通常体积更小、速度更好（取决于对象类型）。
         self.protocol = protocol
 
     def serialize(self, obj: Any) -> Any:
@@ -32,6 +35,7 @@ class PickleSerializer(BaseSerializer):
     def deserialize(self, data: Any, cls: Optional[Type[T]] = None) -> Any:
         try:
             obj = pickle.loads(data)
+            # 若指定了目标类型，则做一次类型校验。
             if cls is not None and not isinstance(obj, cls):
                 raise DeserializationError(
                     f"Deserialized obj is not an instance of {cls.__name__}",

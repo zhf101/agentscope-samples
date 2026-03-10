@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-"""The services exceptions"""
+"""
+业务异常集合（新手教学注释版）
+
+这个文件不写逻辑，只做“命名明确的异常类型”定义：
+- 不同领域（user/conversation/message/token/memory...）用不同异常类
+- 方便 service/router 层精确抛错和捕获
+"""
 
 from .base import (
     AccessDeniedError,
@@ -15,127 +21,127 @@ from .base import (
 
 
 class UserNotFoundError(NotFoundError):
-    """The user not found exception"""
+    """用户不存在。"""
 
     message = "User not found"
 
 
 class ConversationNotFoundError(NotFoundError):
-    """The conversation not found exception"""
+    """会话不存在。"""
 
     message = "Conversation not found"
 
 
 class MessageNotFoundError(NotFoundError):
-    """The message not found exception"""
+    """消息不存在。"""
 
     message = "Message not found"
 
 
 class PlanNotFoundError(NotFoundError):
-    """The Plan not found exception"""
+    """计划不存在。"""
 
     message = "Plan not found"
 
 
 class StateNotFoundError(NotFoundError):
-    """The State not found exception"""
+    """状态不存在。"""
 
     message = "State not found"
 
 
 class EmailAlreadyExistsError(AlreadyExistsError):
-    """The email already exists exception"""
+    """邮箱已存在。"""
 
     message = "Email already exists"
 
 
 class UserAlreadyExistsError(AlreadyExistsError):
-    """The user already exists exception"""
+    """用户已存在。"""
 
     message = "User already exists"
 
 
 class UserEmailAlreadyExistsError(AlreadyExistsError):
-    """The user email already exists exception"""
+    """用户邮箱已存在。"""
 
     message = "User email already exists"
 
 
 class UserAccessDeniedError(AccessDeniedError):
-    """The user access denied exception"""
+    """用户访问被拒绝。"""
 
     message = "User access denied"
 
 
 class ConversationAccessDeniedError(AccessDeniedError):
-    """The conversation access denied exception"""
+    """会话访问被拒绝。"""
 
     message = "Conversation access denied"
 
 
 class IncorrectEmailError(IncorrectParameterError):
-    """The incorrect email exception"""
+    """邮箱参数不正确。"""
 
     message = "Incorrect email"
 
 
 class IncorrectPasswordError(IncorrectParameterError):
-    """The incorrect password exception"""
+    """密码参数不正确。"""
 
     message = "Incorrect password"
 
 
 class InvalidTokenError(InvalidError):
-    """The invalid token exception"""
+    """Token 无效。"""
 
     message = "Invalid token"
 
 
 class InvalidBase64ImageError(InvalidError):
-    """The invalid base64 image exception"""
+    """Base64 图片无效。"""
 
     message = "Invalid base64 image"
 
 
 class InvalidMessageError(InvalidError):
-    """The invalid message exception"""
+    """消息格式无效。"""
 
     message = "Invalid message"
 
 
 class InvalidToolMessageError(InvalidMessageError):
-    """The invalid message exception"""
+    """工具消息格式无效。"""
 
     message = "Invalid tool message"
 
 
 class TokenExpiredError(ExpiredError):
-    """Token expired exception"""
+    """Token 过期。"""
 
     message = "Token expired"
 
 
 class MemoryServiceError(ServiceError):
-    """The memory service error"""
+    """记忆服务错误。"""
 
     message = "Memory Service error"
 
 
 class MessageServiceError(ServiceError):
-    """The message service error"""
+    """消息服务错误。"""
 
     message = "Message Service error"
 
 
 class StateServiceError(ServiceError):
-    """The state service error"""
+    """状态服务错误。"""
 
     message = "State Service error"
 
 
 class PlanServiceError(ServiceError):
-    """The plan service error"""
+    """计划服务错误。"""
 
     message = "Plan Service error"
 

@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+Redis 缓存封装（新手教学注释版）。
+
+提供常见缓存操作：set/get/delete/exists/expire/ttl。
+内部统一用 JsonSerializer 处理序列化。
+"""
+
 import traceback
 from datetime import timedelta
 from typing import Any, Optional, Union
@@ -10,7 +17,7 @@ from alias.server.utils.redis import redis_client
 
 
 class RedisCache:
-    """Async Redis cache wrapper with serialization and basic operations."""
+    """异步 Redis 缓存包装器。"""
 
     def __init__(
         self,
@@ -24,6 +31,7 @@ class RedisCache:
         ex: Optional[Union[int, timedelta]] = None,
     ) -> bool:
         try:
+            # 允许 ex 传 timedelta，内部统一转秒数。
             if isinstance(ex, timedelta):
                 ex = int(ex.total_seconds())
 
@@ -40,6 +48,7 @@ class RedisCache:
             data = await redis_client.get(key)
             if data is None:
                 return None
+            # 从 Redis 取回的数据反序列化成 Python 对象。
             return self.serializer.deserialize(data)
         except Exception as e:
             logger.error(

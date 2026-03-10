@@ -1,9 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Improved tools module for Alias agent toolkit.
+改进工具模块导出入口（新手教学注释版）。
 
-This module contains enhanced tool functions that provide additional
-functionality beyond the basic tools available in the standard toolkit.
+导出增强版文件工具与多模态转文本工具。
 """
 
 from .file_operations import ImprovedFileOperations

@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Dependencies and service initialization for user profiling service
+依赖与服务实例管理（新手教学注释版）
+
+这里负责：
+1) 探测可选依赖是否可用
+2) 懒加载 memory service 单例
+3) 请求数据基础校验
 """
 
 from alias.memory_service.service.core.exceptions import (
@@ -39,6 +44,7 @@ except ImportError:
     MEMORY_UTILS_AVAILABLE = False
 
 # Global memory service instances
+# 用模块级变量缓存实例，避免重复初始化。
 memory_service_user_profiling = None
 memory_service_tool_memory = None
 user_profiling_config = None
@@ -63,6 +69,7 @@ def get_memory_service(memory_type: str = "user_profiling"):
     global user_profiling_config
     global candidate_pool_config
 
+    # 依赖不可用时，立即报服务不可用。
     if not MEM0_AVAILABLE:
         raise ServiceUnavailableError("Memory service (mem0ai)")
 
@@ -113,9 +120,11 @@ def validate_request_data(
     """
     if none_empty_string_fields is None:
         none_empty_string_fields = []
+    # 必填字段：缺失或为 None 都视为非法。
     for field in required_fields:
         if field not in request_data or request_data[field] is None:
             raise MissingRequiredFieldError(field)
+    # 指定字段不允许空字符串。
     for field in none_empty_string_fields:
         if field in request_data and request_data[field] == "":
             raise EmptyStringFieldError(field)

@@ -1,0 +1,57 @@
+[project]
+name = "gdp"
+version = "0.2.0"
+description = ""
+readme = "README.md"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+    "fastapi>=0.115.12",
+    "gitpython>=3.1.44",
+    "ipython>=8.35.0",
+    "mcp>=1.6.0",
+    "uvicorn>=0.34.0",
+    "redis>=6.0.0b2",
+    "fastapi-limiter>=0.1.6",
+    "pyjwt>=2.10.1",
+    "sqlmodel>=0.0.24",
+    "pydantic-settings>=2.9.1",
+    "pydantic[email]>=2.11.3",
+    "user-agents>=2.2.0",
+    "passlib>=1.7.4",
+    "loguru>=0.6.0",
+    "python-multipart>=0.0.20",
+    "bcrypt==4.0.1",
+    "agentscope[qdrant]==1.0.11",
+    "tenacity>=8.5.0",
+    "chardet>=5.2.0",
+    "aiofiles>=23.2.1",
+    "pygments>=2.19.1",
+    "markdown2>=2.5.3",
+    "alembic>=1.16.1",
+    "sentry-sdk[fastapi]===2.30.0",
+    "agentscope-runtime>=1.0.0",
+    "aiosqlite>=0.21.0",
+    "asyncpg>=0.30.0",
+    "itsdangerous>=2.2.0"
+]
+
+[tool.setuptools]
+packages = { find = { where = ["src"] } }
+
+[tool.setuptools.package-dir]
+"" = "src"
+
+[build-system]
+requires = ["setuptools>=42", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[dependency-groups]
+dev = [
+    "pytest>=8.3.5",
+]
+
+[project.scripts]
+alias_agent = "alias.cli:main"
+alias_agent_runtime = "alias.server.alias_agent_app:main"
+gdp_agent = "alias.cli:main"
+gdp_agent_runtime = "alias.server.alias_agent_app:main"

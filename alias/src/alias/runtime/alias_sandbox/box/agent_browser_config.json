@@ -1,0 +1,9 @@
+{
+  "default_timeout": 25000,
+  "max_output": 50000,
+  "headed": false,
+  "session_name": null,
+  "allowed_domains": null,
+  "executable_path": "/usr/bin/chromium",
+  "profile_path": null
+}

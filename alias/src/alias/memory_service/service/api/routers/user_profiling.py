@@ -1,6 +1,10 @@
 # -*- coding: utf-8 -*-
 """
-User profiling API endpoints
+用户画像 API（新手教学注释版）
+
+说明：
+- 一部分接口是同步返回（如 retrieve/show_all）
+- 一部分接口走后台任务（返回 submit_id，后续查 task_status）
 """
 
 import asyncio
@@ -45,6 +49,7 @@ logger = setup_logging()
 router = APIRouter(prefix="/alias_memory_service", tags=["user_profiling"])
 
 # Task manager instance
+# 后台任务状态统一交给 task_manager 记录到 Redis。
 task_manager = UserProfilingTaskManager()
 
 
@@ -65,6 +70,7 @@ async def add_memory(request: UserProfilingAddRequest):
         dict: status, submit_id
     """
     try:
+        # 后台任务 ID，前端可用于轮询状态。
         submit_id = str(uuid.uuid4())
 
         async def background_add_memory():
@@ -287,6 +293,7 @@ async def record_action(
 
         async def background_record_action():
             try:
+                # action_type 枚举优先，否则回退到 action 原字段。
                 action_value = (
                     request.action_type.value
                     if request.action_type
@@ -320,6 +327,7 @@ async def record_action(
                             "get_messages_by_session_id returned empty list",
                         )
                 if action_value == "TASK_STOP":
+                    # TASK_STOP 走工具记忆服务。
                     memory_type = "tool_memory"
                 else:
                     memory_type = "user_profiling"

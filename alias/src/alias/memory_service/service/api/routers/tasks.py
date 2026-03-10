@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Task management API endpoints
+任务管理接口（新手教学注释版）
+
+提供后台任务状态查询、按日期筛选和存储统计接口。
 """
 
 from datetime import datetime
@@ -21,12 +23,13 @@ logger = setup_logging()
 router = APIRouter(prefix="/alias_memory_service", tags=["tasks"])
 
 # Task manager instance
+# 模块级任务管理器单例。
 task_manager = UserProfilingTaskManager()
 
 
 @router.get("/task_status/{submit_id}")
 async def get_task_status(submit_id: str):
-    """Get the status of a background task by submit_id"""
+    """按 submit_id 获取任务状态。"""
     try:
         status = task_manager.get_task_status(submit_id)
         if status is None:
@@ -48,7 +51,7 @@ async def get_task_status(submit_id: str):
 
 @router.get("/all_tasks")
 async def get_all_tasks():
-    """Get all tracked tasks (for debugging/monitoring)"""
+    """获取当前跟踪中的全部任务（调试/监控用途）。"""
     try:
         # Clean up old completed tasks first
         task_manager.cleanup_completed_tasks()
@@ -70,7 +73,7 @@ async def get_all_tasks():
 
 @router.get("/tasks_by_date/{date_str}")
 async def get_tasks_by_date(date_str: str):
-    """Get all tasks for a specific date (format: YYYY-MM-DD)"""
+    """按日期获取任务（YYYY-MM-DD）。"""
     try:
         task_date = datetime.strptime(date_str, "%Y-%m-%d").date()
         tasks = task_manager.get_tasks_by_date(task_date)
@@ -92,7 +95,7 @@ async def get_tasks_by_date(date_str: str):
 
 @router.get("/tasks_by_date_range")
 async def get_tasks_by_date_range(start_date: str, end_date: str):
-    """Get all tasks within a date range (format: YYYY-MM-DD)"""
+    """按日期区间获取任务（YYYY-MM-DD）。"""
     try:
         start = datetime.strptime(start_date, "%Y-%m-%d").date()
         end = datetime.strptime(end_date, "%Y-%m-%d").date()
@@ -127,7 +130,7 @@ async def get_tasks_by_date_range(start_date: str, end_date: str):
 
 @router.get("/storage_stats")
 async def get_storage_stats():
-    """Get storage statistics for task files"""
+    """获取任务文件存储统计。"""
     try:
         stats = task_manager.get_storage_stats()
         return {"status": "success", "data": stats}

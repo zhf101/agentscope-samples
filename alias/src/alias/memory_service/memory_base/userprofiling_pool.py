@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+用户画像记忆池实现（新手教学注释版）。
+
+在 BaseAsyncVectorMemory 之上增加：
+1) is_confirmed 元数据标准化
+2) 用户信息/用户事件抽取接口
+"""
+
 import asyncio
 import ast
 import re
@@ -24,6 +32,7 @@ class AsyncVectorUserProfilingMemory(BaseAsyncVectorMemory):
         self,
         metadata: Optional[Dict[str, Any]],
     ) -> Dict[str, Any]:
+        # 统一把 is_confirmed 归一为 0/1 整数，便于过滤。
         prepared_metadata = super()._prepare_metadata_for_add(metadata)
         if "is_confirmed" in prepared_metadata:
             prepared_metadata["is_confirmed"] = _normalize_is_confirmed(
@@ -62,7 +71,7 @@ class AsyncVectorUserProfilingMemory(BaseAsyncVectorMemory):
 
     async def get_user_event_memory(self, content: Any) -> List[str]:
         """
-        Extracts the User Event Memory from the given content.
+        从内容中抽取用户事件记忆。
         """
         try:
             memory_content = self._preprocess_content(content)

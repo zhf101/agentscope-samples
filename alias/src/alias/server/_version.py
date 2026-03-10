@@ -1,4 +1,5 @@
 # -*- coding: utf-8 -*-
-"""Version for this project."""
+"""项目版本号定义（新手教学注释版）。"""
 
+# 统一版本号常量，供 CLI/服务启动时展示或对外暴露。
 __version__ = "0.2.0"

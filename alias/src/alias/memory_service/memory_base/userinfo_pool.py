@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+用户信息记忆池（新手教学注释版）。
+
+用途：从会话内容里抽取“稳定用户信息”并转成可入库列表。
+"""
+
 import asyncio
 import ast
 import re
@@ -19,7 +25,7 @@ setup_config()
 class AsyncVectorUserInfoMemory(BaseAsyncVectorMemory):
     async def get_user_info_memory(self, content: Any) -> List[str]:
         """
-        Extracts the User Info Memory from the given content.
+        从输入内容抽取用户信息记忆。
         """
         try:
             memory_content = self._preprocess_content(content)
@@ -29,6 +35,7 @@ class AsyncVectorUserInfoMemory(BaseAsyncVectorMemory):
             )
 
             await asyncio.sleep(2)
+            # 调用 LLM 按提示词抽取结构化信息。
             user_info_response = await asyncio.to_thread(
                 self.llm.generate_response,
                 messages=[
@@ -46,7 +53,7 @@ class AsyncVectorUserInfoMemory(BaseAsyncVectorMemory):
 
     def _format_llm_output_to_list(self, llm_output: str) -> List[str]:
         """
-        Convert LLM output into a Python list of strings.
+        把 LLM 输出解析为字符串列表。
         """
         if not llm_output or not isinstance(llm_output, str):
             return []

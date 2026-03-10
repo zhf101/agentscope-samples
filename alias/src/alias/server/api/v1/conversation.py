@@ -1,5 +1,17 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=unused-argument
+"""
+会话（Conversation）相关 API（中文教学注释版）。
+
+接口包括：
+- 创建/查询/更新/删除会话
+- 列出会话消息
+- 获取/更新 Roadmap
+- 收藏/分享/置顶
+
+参考 docs/api_v1_conversation_py_total_beginner_walkthrough.md
+"""
+
 import uuid
 from typing import Optional
 
@@ -30,6 +42,7 @@ from alias.server.services.conversation_service import (
     ConversationService,
 )
 
+# 路由前缀：/conversations
 router = APIRouter(prefix="/conversations", tags=["conversations"])
 
 
@@ -40,6 +53,7 @@ async def create_conversation(
     create_request: CreateConversationRequest,
 ) -> CreateConversationResponse:
     """Create a new conversation."""
+    # 调用 Service 创建会话（内部会创建沙盒）
     service = ConversationService(session=session)
     conversation = await service.create_conversation(
         user_id=current_user.id,
@@ -64,6 +78,7 @@ async def list_conversations(
     order_direction: Optional[str] = None,
 ) -> ListConversationsResponse:
     """List conversations."""
+    # 统一分页参数构造
     pagination = PaginationParams.create(
         page=page,
         page_size=page_size,
@@ -72,6 +87,7 @@ async def list_conversations(
     )
 
     service = ConversationService(session=session)
+    # 按当前用户过滤会话
     total, conversations = await service.list_conversations(
         user_id=current_user.id,
         pagination=pagination,
@@ -100,6 +116,7 @@ async def list_conversation_messages(
     order_direction: Optional[str] = None,
 ) -> ListMessagesResponse:
     """List conversation messages."""
+    # 分页参数
     pagination = PaginationParams.create(
         page=page,
         page_size=page_size,
@@ -108,6 +125,7 @@ async def list_conversation_messages(
     )
 
     service = ConversationService(session=session)
+    # Service 内部会校验会话归属
     total, messages = await service.list_conversation_messages(
         user_id=current_user.id,
         conversation_id=conversation_id,
@@ -119,6 +137,7 @@ async def list_conversation_messages(
         payload=PageMessageInfo(
             total=total,
             items=[
+                # ORM 模型 -> schema 模型
                 MessageInfo.model_validate(message) for message in messages
             ],
         ),
@@ -155,6 +174,7 @@ async def update_conversation_roadmap(
     roadmap: Roadmap,
 ) -> GetRoadmapResponse:
     """Update conversation roadmap."""
+    # Roadmap 变更会记录埋点（Service 内部处理）
     service = ConversationService(session=session)
     roadmap = await service.update_roadmap(
         conversation_id=conversation_id,
@@ -198,6 +218,7 @@ async def update_conversation(
 ) -> UpdateConversationResponse:
     """Update conversation name and description."""
     service = ConversationService(session=session)
+    # name/description 一次性更新
     conversation = await service.update_conversation(
         conversation_id,
         name=request.name,
@@ -270,6 +291,7 @@ async def collect_conversation(
     request: UpdateConversationRequest,
 ) -> UpdateConversationResponse:
     """Collect conversation."""
+    # 收藏/取消收藏
     service = ConversationService(session=session)
     conversation = await service.collect_conversation(
         conversation_id=conversation_id,
@@ -294,6 +316,7 @@ async def share_conversation(
     request: UpdateConversationRequest,
 ) -> UpdateConversationResponse:
     """Share conversation."""
+    # 分享/取消分享
     service = ConversationService(session=session)
     conversation = await service.share_conversation(
         conversation_id=conversation_id,
@@ -318,6 +341,7 @@ async def pin_conversation(
     request: UpdateConversationRequest,
 ) -> UpdateConversationResponse:
     """Pin conversation."""
+    # 置顶/取消置顶
     service = ConversationService(session=session)
     conversation = await service.pin_conversation(
         conversation_id=conversation_id,
@@ -338,6 +362,7 @@ async def delete_conversation(
     conversation_id: uuid.UUID,
 ) -> DeleteConversationResponse:
     """Delete a conversation."""
+    # 会话删除会级联删除消息/计划/状态与沙盒
     service = ConversationService(session=session)
     await service.delete_conversation(
         user_id=current_user.id,

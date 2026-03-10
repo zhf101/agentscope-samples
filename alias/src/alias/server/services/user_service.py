@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 """The user related services"""
+"""
+用户服务（中文教学注释版）。
+
+职责：
+1) 创建/更新/删除用户；
+2) 处理密码校验与加密；
+3) 基于 parent_id 实现多租户/子账号逻辑。
+"""
 import uuid
 from typing import List, Optional, Tuple
 
@@ -32,9 +40,11 @@ class UserService(BaseService[User]):
         parent_id: Optional[uuid.UUID] = None,
     ):
         """Delete current user."""
+        # 先查用户是否存在
         user = await self.get(user_id)
         if not user:
             raise UserNotFoundError(extra_info={"user_id": user_id})
+        # 如果是子账号操作，需要校验 parent_id
         if parent_id and user.parent_id != parent_id:
             raise UserNotFoundError(extra_info={"parent_id": parent_id})
         await self.delete(user_id)
@@ -52,6 +62,7 @@ class UserService(BaseService[User]):
         if not user:
             raise UserNotFoundError(extra_info={"user_id": user_id})
 
+        # 如果传了旧密码，需要先校验
         if (
             password
             and user.password
@@ -59,17 +70,21 @@ class UserService(BaseService[User]):
         ):
             raise IncorrectPasswordError()
 
+        # 按需更新字段
         if username:
             user.username = username
         if new_password:
+            # 新密码需要加密存储
             user.password = get_password_hash(new_password)
         if avatar:
+            # 头像要是合法的 base64 图片
             if not is_valid_base64_image(avatar):
                 raise InvalidBase64ImageError(
                     extra_info={"avatar": avatar},
                 )
             user.avatar = avatar
 
+        # 更新最后修改时间
         user.update_time = get_current_time()
         updated_user = await self.update(user_id, user)
         return updated_user
@@ -85,10 +100,12 @@ class UserService(BaseService[User]):
         parent_id: Optional[uuid.UUID] = None,
     ) -> User:
         """Create a new user."""
+        # 防止重复注册
         user = await self.get_user_by_email(email)
         if user:
             raise EmailAlreadyExistsError(extra_info={"email": email})
         if password:
+            # 明文密码要哈希化存储
             password = get_password_hash(password)
         user = User(
             email=email,
@@ -99,6 +116,7 @@ class UserService(BaseService[User]):
             oauth_provider=oauth_provider,
             parent_id=parent_id,
         )
+        # 写入数据库
         user = await self.create(user)
         return user
 
@@ -121,6 +139,7 @@ class UserService(BaseService[User]):
         pagination: PaginationParams,
     ) -> Tuple[int, List[User]]:
         """List users by parent_id."""
+        # 分页查询子账号
         filters = {"parent_id": parent_id}
         total = await self.count_by_fields(filters=filters)
         messages = await self.paginate(
@@ -138,4 +157,5 @@ class UserService(BaseService[User]):
         self,
         user_id: uuid.UUID,
     ) -> User:
+        # DAO 层负责更新 last_login_time / login_count 等
         return await self.dao.update_last_login_info(user_id=user_id)

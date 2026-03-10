@@ -1,4 +1,17 @@
 # -*- coding: utf-8 -*-
+"""
+文件相关 API（中文教学注释版）。
+
+提供接口：
+1) /files/upload       上传文件
+2) /files/{file_id}    获取文件元数据
+3) /files/{id}/share   设置共享状态
+4) /files/{id}         删除文件
+5) /files/{id}/preview 预览文件（流式返回）
+
+参考 docs/api_v1_file_py_total_beginner_walkthrough.md
+"""
+
 import traceback
 import uuid
 
@@ -17,6 +30,7 @@ from alias.server.schemas.file import (
 )
 from alias.server.services.file_service import FileService
 
+# 文件相关路由统一以 /files 为前缀
 router = APIRouter(prefix="/files", tags=["files"])
 
 
@@ -27,6 +41,7 @@ async def upload_file(
     file: UploadFile = FastAPIFile(...),
 ) -> UploadFileResponse:
     """Upload file."""
+    # FastAPI 的 UploadFile 会把文件内容放在临时文件里
     file_service = FileService(session=session)
     file_info = await file_service.upload_file(current_user.id, file)
     return UploadFileResponse(
@@ -43,6 +58,7 @@ async def get_file(
     file_id: uuid.UUID,
 ) -> UploadFileResponse:
     """Get file."""
+    # 这里只返回元数据，不返回文件内容
     file_service = FileService(session=session)
     file = await file_service.get(file_id)
 
@@ -61,6 +77,7 @@ async def share_file(
     request: ShareFileRequest,
 ) -> UploadFileResponse:
     """Set file sharing."""
+    # share=True/False 切换分享状态
     file_service = FileService(session=session)
     file = await file_service.share_file(
         user_id=current_user.id,
@@ -82,6 +99,7 @@ async def delete_file(
     file_id: uuid.UUID,
 ) -> DeleteFileResponse:
     """Delete file."""
+    # Service 内部会做权限校验
     file_service = FileService(session=session)
     await file_service.delete_file(
         user_id=current_user.id,
@@ -104,6 +122,7 @@ async def preview_file(
     """Preview file (requires authentication)."""
     try:
         file_service = FileService(session=session)
+        # preview_file 返回 (流对象, 媒体类型)
         file_stream, media_type = await file_service.preview_file(
             file_id=file_id,
             user_id=current_user.id,
@@ -111,6 +130,7 @@ async def preview_file(
         return StreamingResponse(file_stream, media_type=media_type)
 
     except Exception as e:
+        # 预览异常统一转 500 返回
         raise HTTPException(
             status_code=500,
             detail=(

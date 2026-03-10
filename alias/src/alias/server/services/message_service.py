@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+消息服务（中文教学注释版）。
+
+职责：
+1) 写入/查询消息记录；
+2) 处理用户消息携带的文件；
+3) 记录反馈/收藏等行为（调用 ActionService）。
+"""
+
 import uuid
 from typing import List, Optional, Tuple, Union, Dict, Any
 
@@ -35,12 +44,14 @@ class MessageService(BaseService[Message]):
     ):
         """Initialize message service."""
         super().__init__(session)
+        # FileService 用于处理用户消息中的文件
         self.file_service = FileService(session=session)
 
     async def _validate_exists(
         self,
         instance_id: uuid.UUID,
     ) -> None:
+        # 校验消息是否存在
         message = await self.get(instance_id)
         if not message:
             raise MessageNotFoundError(extra_info={"message_id": instance_id})
@@ -50,11 +61,13 @@ class MessageService(BaseService[Message]):
         instance_id: uuid.UUID,
         obj_in: Union[Dict[str, Any], Message],
     ) -> None:
+        # 更新前校验
         message = await self.get(instance_id)
         if not message:
             raise MessageNotFoundError(extra_info={"message_id": instance_id})
 
     async def _validate_delete(self, instance_id: uuid.UUID) -> None:
+        # 删除前校验
         message = await self.get(instance_id)
         if not message:
             raise MessageNotFoundError(extra_info={"message_id": instance_id})
@@ -68,17 +81,20 @@ class MessageService(BaseService[Message]):
         files: List[uuid.UUID] = None,
         roadmap: Optional[RoadmapChange] = None,
     ) -> Message:
+        # 用户消息：可能携带多个文件
         message_id = uuid.uuid4()
         files = files or []
         file_items = []
 
         for file_id in files:
+            # 把文件放入沙盒，供 Agent 使用
             file = await self.file_service.upload_to_sandbox(
                 file_id=file_id,
                 conversation_id=conversation_id,
                 user_id=user_id,
             )
             if file:
+                # 把 File 记录转成前端可识别的 FileItem
                 file_item = FileItem(
                     id=str(file.id),
                     filename=file.filename,
@@ -87,12 +103,14 @@ class MessageService(BaseService[Message]):
                 )
                 file_items.append(file_item)
 
+        # 构建 UserMessage（业务层消息对象）
         message = UserMessage(
             content=query,
             files=file_items,
             roadmap=roadmap,
         )
 
+        # 写入数据库消息表
         return await self.create_message(
             conversation_id=conversation_id,
             message=message,
@@ -108,6 +126,7 @@ class MessageService(BaseService[Message]):
         task_id: Optional[uuid.UUID] = None,
         parent_message_id: Optional[uuid.UUID] = None,
     ) -> Message:
+        # 将业务层 message 转换为数据库 Message
         message_id = message_id or uuid.uuid4()
         message = Message(
             id=message_id,
@@ -125,6 +144,7 @@ class MessageService(BaseService[Message]):
         conversation_id: uuid.UUID,
         pagination: Optional[PaginationParams] = None,
     ) -> Tuple[int, List[Message]]:
+        # 分页获取会话消息列表
         filters = {"conversation_id": conversation_id}
         total = await self.count_by_fields(filters=filters)
         messages = await self.paginate(
@@ -139,11 +159,13 @@ class MessageService(BaseService[Message]):
         message_id: uuid.UUID,
         feedback: FeedbackType,
     ) -> Message:
+        # 给消息点赞/踩
         message = await self.get(message_id)
         if not message:
             raise MessageNotFoundError(extra_info={"message_id": message_id})
 
         action_service = ActionService()
+        # 记录反馈埋点
         await action_service.record_feedback(
             user_id=user_id,
             conversation_id=message.conversation_id,
@@ -161,18 +183,21 @@ class MessageService(BaseService[Message]):
         collect: bool,
         user_id: uuid.UUID,
     ) -> Message:
+        # 收藏/取消收藏工具消息
         message = await self.get(message_id)
         if not message:
             raise MessageNotFoundError(extra_info={"message_id": message_id})
 
         message_json = message.message
         if message_json.get("type", MessageType.USER) != MessageType.THOUGHT:
+            # 只有工具/思考类消息才允许收藏
             raise InvalidToolMessageError(
                 message="Message is not a tool message",
                 extra_info={"message_id": message_id},
             )
 
         action_service = ActionService()
+        # 记录收藏行为
         await action_service.record_collect_tool(
             user_id=user_id,
             conversation_id=message.conversation_id,
@@ -187,4 +212,5 @@ class MessageService(BaseService[Message]):
         self,
         conversation_id: uuid.UUID,
     ) -> None:
+        # 删除某会话下的所有消息
         await self.delete_all_by_field("conversation_id", conversation_id)

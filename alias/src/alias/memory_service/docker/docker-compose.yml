@@ -56,7 +56,7 @@ services:
         condition: service_started   # ✅ wait for Qdrant to start
   # Redis for user profiling service
   user-profiling-redis:
-    image: redis:latest
+    image: redis:7-alpine
     ports:
       - "7000:6379"
     command: redis-server --appendonly yes

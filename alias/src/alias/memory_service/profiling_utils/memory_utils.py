@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+"""
+memory_service 辅助工具函数（新手教学注释版）。
+
+这个文件包含：
+1) 过滤器与元数据构建
+2) 会话消息读取与格式化
+3) 工作流抽取结果整理
+4) 若干文本/JSON 处理辅助函数
+"""
+
 from typing import List, Dict, Any, Optional, Tuple, Union
 import json
 import re
@@ -52,6 +62,7 @@ def build_filters_and_metadata(
         ValueError: If none of `user_id`, `agent_id`, or `run_id` are provided.
     """
 
+    # 复制输入对象，避免在函数内部意外修改调用方原数据。
     base_metadata_template = deepcopy(input_metadata) if input_metadata else {}
     effective_query_filters = deepcopy(input_filters) if input_filters else {}
 
@@ -96,6 +107,7 @@ def run_async_in_thread(async_func, *args):
     context.
     """
 
+    # 在同步上下文里运行异步函数的简化桥接。
     return asyncio.run(async_func(*args))
 
 

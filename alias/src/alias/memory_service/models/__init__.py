@@ -1,9 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Memory Service for Alias
+Memory Service 模型导出入口（新手教学注释版）。
 
-This package provides a service-based approach for user profiling functionality
-with independent dependency management.
+统一导出 user_profiling 相关请求/响应模型，便于外部直接从
+`alias.memory_service.models` 导入。
 """
 
 from alias.memory_service.models.user_profiling import (

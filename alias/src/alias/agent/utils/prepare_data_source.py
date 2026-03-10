@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+数据源准备工具（新手教学注释版）。
+
+负责：
+1) 构建 DataSourceManager
+2) 给会话追加数据源说明
+3) 把数据源工具挂载到指定 toolkit
+"""
+
 import os
 
 from agentscope_runtime.sandbox.box.sandbox import Sandbox
@@ -23,6 +32,7 @@ async def prepare_data_sources(
     binded_toolkit: AliasToolkit = None,
     llm_call_manager: LLMCallManager = None,
 ):
+    """准备数据源并按需注入工具。"""
     data_manager = await build_data_manager(
         session_service,
         sandbox,
@@ -42,6 +52,7 @@ async def build_data_manager(
     sandbox: Sandbox,
     llm_call_manager: LLMCallManager,
 ):
+    """根据 session_entity.data_config 构建并准备数据源管理器。"""
     data_manager = DataSourceManager(sandbox, llm_call_manager)
     if (
         hasattr(session_service.session_entity, "data_config")
@@ -59,6 +70,7 @@ def add_data_source_tools(
     data_manager: DataSourceManager,
     *toolkits: AliasToolkit,
 ):
+    """把数据源工具共享到目标 toolkit。"""
     data_source_toolkit = data_manager.toolkit
     tool_names = list(data_source_toolkit.tools.keys())
     for toolkit in toolkits:
@@ -69,6 +81,7 @@ async def add_user_data_message(
     session_service: SessionService,
     data_manager: DataSourceManager,
 ):
+    """把数据源描述追加到会话最新消息。"""
     await session_service.append_to_latest_message(
         "\n\n" + data_manager.get_all_data_sources_desc(),
     )

@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+"""
+异步向量记忆基类实现（新手教学注释版）。
+
+该文件基于 mem0 进行二次封装，提供：
+1) 向量库写入/检索
+2) 元数据过滤构建
+3) 事实抽取与记忆更新流程
+4) 可选图存储协同
+"""
+
 import asyncio
 import concurrent
 import gc
@@ -46,6 +56,8 @@ setup_config()
 
 
 class BaseAsyncVectorMemory(MemoryBase):
+    """memory_base 的核心异步向量记忆实现。"""
+
     # Adapted from mem0.memory.main.AsyncMemory.__init__
     def __init__(self, config: MemoryConfig = MemoryConfig()):
         self.config = config

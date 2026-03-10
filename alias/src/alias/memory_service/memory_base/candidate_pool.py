@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+候选记忆池实现（新手教学注释版）。
+
+功能重点：
+1) 维护候选记忆分数（时间衰减 + 访问次数）
+2) 查询后更新元数据
+3) 选出高分候选用于“画像提升”
+"""
+
 import asyncio
 import hashlib
 import json
@@ -43,6 +52,8 @@ setup_config()
 
 
 class AsyncVectorCandidateMemory(BaseAsyncVectorMemory):
+    """候选池向量记忆实现。"""
+
     async def _on_existing_memory_retrieved(
         self,
         memory_ids: List[str],
@@ -132,6 +143,7 @@ class AsyncVectorCandidateMemory(BaseAsyncVectorMemory):
         highest_score = 0.0
         highest_score_memory = None
 
+        # 候选越多，阈值会动态变化，避免总是选中低质量候选。
         threshold = 0.95 * (1.0 - (1 / len(candidates)))
 
         for candidate in candidates:
@@ -180,6 +192,7 @@ class AsyncVectorCandidateMemory(BaseAsyncVectorMemory):
 
         normalized_visit = 1 / (1 + math.exp(-visited_count / 10))
 
+        # 当前权重：时间新鲜度 70%，访问频次 30%。
         score = round(0.7 * normalized_time + 0.3 * normalized_visit, 3)
 
         return score

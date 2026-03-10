@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+通用工具扩展注册（新手教学注释版）。
+
+负责把多模态、搜索、金融类 MCP 工具接入 AliasToolkit。
+"""
+
 import os
 from typing import TYPE_CHECKING
 import traceback
@@ -23,6 +29,7 @@ async def add_tools(
     - tavily search
     """
     try:
+        # 注册 DashScope 多模态工具（音频/图片转文本）。
         multimodal_tools = DashScopeMultiModalTools(
             sandbox=toolkit.sandbox,
             dashscope_api_key=os.getenv("DASHSCOPE_API_KEY", ""),
@@ -38,6 +45,7 @@ async def add_tools(
         raise e from None
 
     try:
+        # 接入 Tavily 搜索 MCP，并绑定长文本后处理。
         long_text_hook = LongTextPostHook(toolkit.sandbox)
         tavily_mcp_client = StdIOStatefulClient(
             name="tavily_mcp_client",
@@ -59,6 +67,7 @@ async def add_tools(
         raise e from None
 
     try:
+        # 创建 finance 工具组并接入两类金融 MCP。
         toolkit.create_tool_group(
             group_name="finance",
             description="Finance Analysis tools",

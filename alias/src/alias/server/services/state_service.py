@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+State（会话状态）服务（中文教学注释版）。
+
+State 用来保存“对话过程中的中间状态”，例如：
+- Agent 当前执行到哪一步；
+- 一些可恢复的上下文数据。
+"""
+
 import uuid
 from typing import List, Optional, Tuple, Union, Dict, Any
 
@@ -19,6 +27,7 @@ class StateService(BaseService[State]):
     _cache_cls = StateCache
 
     async def _validate_exists(self, instance_id: uuid.UUID) -> None:
+        # 校验 state 是否存在
         state = await self.get(instance_id)
         if not state:
             raise StateNotFoundError(extra_info={"state_id": instance_id})
@@ -28,11 +37,13 @@ class StateService(BaseService[State]):
         instance_id: uuid.UUID,
         obj_in: Union[Dict[str, Any], State],
     ) -> None:
+        # 更新前校验
         state = await self.get(instance_id)
         if not state:
             raise StateNotFoundError(extra_info={"state_id": instance_id})
 
     async def _validate_delete(self, instance_id: uuid.UUID) -> None:
+        # 删除前校验
         state = await self.get(instance_id)
         if not state:
             raise StateNotFoundError(extra_info={"state_id": instance_id})
@@ -42,6 +53,7 @@ class StateService(BaseService[State]):
         user_id: uuid.UUID,
         pagination: Optional[PaginationParams] = None,
     ) -> Tuple[int, List[State]]:
+        # 分页列出用户的 state
         filters = {"user_id": user_id}
         total = await self.count_by_fields(filters=filters)
         states = await self.paginate(
@@ -55,6 +67,7 @@ class StateService(BaseService[State]):
         conversation_id: uuid.UUID,
         content: str,
     ) -> State:
+        # 如果已有 state，则走“更新”
         state = await self.get_state(conversation_id)
         if state:
             logger.info(
@@ -65,6 +78,7 @@ class StateService(BaseService[State]):
                 content=content,
             )
 
+        # 新建 state 记录
         state = State(
             conversation_id=conversation_id,
             content=content,
@@ -75,6 +89,7 @@ class StateService(BaseService[State]):
         return state
 
     async def get_state(self, conversation_id: uuid.UUID) -> Optional[State]:
+        # 先查缓存，再查库
         state = await self.get_cache(conversation_id)
         if not state:
             state = await self.get_last_by_field(
@@ -90,6 +105,7 @@ class StateService(BaseService[State]):
         conversation_id: uuid.UUID,
         content: str,
     ) -> State:
+        # 更新 state 内容
         state = await self.get_state(conversation_id)
         if not state:
             raise StateNotFoundError(
@@ -101,6 +117,7 @@ class StateService(BaseService[State]):
         return await self.update(state.id, state)
 
     async def delete_state(self, conversation_id: uuid.UUID) -> None:
+        # 删除会话对应的 state
         state = await self.get_state(conversation_id=conversation_id)
         if state:
             await self.delete(state.id)

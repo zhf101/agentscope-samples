@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+"""
+Memory Service 配置构建（新手教学注释版）。
+
+本文件负责构建 mem0 所需的：
+- LLM 配置
+- Embedding 配置
+- Vector Store(Qdrant) 配置
+- 可选 Graph Store(Neo4j) 配置
+"""
+
 import os
 
 from dotenv import load_dotenv
@@ -100,7 +110,7 @@ def create_memory_config_with_collection(
         MemoryConfig: Configured memory settings with vector store
             (and optionally graph store)
     """
-    # Create vector store configuration for Qdrant
+    # 为指定 collection 创建 Qdrant 向量库配置。
     # vector_store_config = VectorStoreConfig(
     #     provider="qdrant",
     #     config={
@@ -124,7 +134,7 @@ def create_memory_config_with_collection(
         },
     )
 
-    # Build memory configuration with optional graph store
+    # 按需决定是否附加 graph_store 配置。
     if use_graph_store:
         config = MemoryConfig(
             embedder=MEM0_DEFAULT_EMBEDDER_CONFIG,  # Default embedding
@@ -139,6 +149,7 @@ def create_memory_config_with_collection(
             llm=MEM0_DEFAULT_LLM_CONFIG,
             vector_store=vector_store_config,  # Qdrant without graph
             # history_db_path = f"tmp/db/{collection_name}.db"
+            # history_db_path 用于本地历史持久化。
             history_db_path=os.path.join(
                 os.path.expanduser("~"),
                 ".mem0",

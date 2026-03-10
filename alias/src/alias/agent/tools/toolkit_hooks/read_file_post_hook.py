@@ -1,11 +1,13 @@
 # -*- coding: utf-8 -*-
+"""read_file 结果后处理（新手教学注释版）。"""
+
 from agentscope.message import ToolUseBlock, TextBlock
 from agentscope.tool import ToolResponse
 
 
 def _summarize_csv(text_block: TextBlock) -> None:
     """
-    Replace the full CSV with a preview (first 5 rows) and a line count.
+    将 CSV 全量内容替换为前几行预览 + 总行数提示。
     """
     recommend_tool = "run_ipython_cell"
     head_len = 5
@@ -26,7 +28,7 @@ def read_file_post_hook(
     tool_response: ToolResponse,
 ) -> ToolResponse:
     """
-    Condense large CSV outputs after `read_file` or `read_multiple_files`.
+    压缩 read_file/read_multiple_files 返回中的 CSV 内容。
 
     Returns the (possibly modified) ToolResponse so the agent sees only
     a brief snippet instead of the entire file.

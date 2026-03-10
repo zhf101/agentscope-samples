@@ -1,5 +1,13 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=W0401 W0406 W0614
+"""
+Alembic 环境脚本（新手教学注释版）。
+
+职责：
+1) 告诉 Alembic 从哪里读取模型元数据
+2) 配置离线/在线迁移执行方式
+3) 把 Alembic/SQLAlchemy 日志转发到 loguru
+"""
 
 import logging
 from loguru import logger
@@ -46,6 +54,7 @@ target_metadata = SQLModel.metadata
 
 
 def get_url():
+    # 从统一 settings 中读取数据库 URI。
     return str(settings.SQLALCHEMY_DATABASE_URI)
 
 
@@ -61,6 +70,7 @@ def run_migrations_offline():
     script output.
 
     """
+    # 离线模式：不建立真实连接，直接按 URL 生成 SQL。
     url = get_url()
     context.configure(
         url=url,
@@ -80,6 +90,7 @@ def run_migrations_online():
     and associate a connection with the context.
 
     """
+    # 在线模式：创建引擎并连到数据库后执行迁移。
     configuration = config.get_section(config.config_ini_section)
     configuration["sqlalchemy.url"] = get_url()
     connectable = engine_from_config(

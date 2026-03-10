@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+长期记忆辅助工具（新手教学注释版）。
+
+包括：
+1) 过滤最近用户消息
+2) MockMessage -> 可序列化字典转换
+"""
+
 from datetime import datetime, timezone
 from typing import Any
 

@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 """
-FastAPI application layer for user profiling service
+应用层包入口（新手教学注释版）。
 """

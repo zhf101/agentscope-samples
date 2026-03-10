@@ -1,5 +1,14 @@
 # -*- coding: utf-8 -*-
 # mypy: disable-error-code="name-defined"
+"""
+长期记忆服务客户端（新手教学注释版）
+
+用途：
+1) 探测记忆服务是否可用
+2) 记录行为
+3) 检索用户画像 / 工具记忆
+4) 写入长期记忆
+"""
 from http import HTTPStatus
 from typing import Optional
 from loguru import logger
@@ -12,6 +21,8 @@ from .base_client import BaseClient
 
 
 class MemoryClient(BaseClient):
+    """调用 user profiling / tool memory 服务的客户端。"""
+
     base_url: Optional[str] = settings.USER_PROFILING_BASE_URL
 
     @classmethod
@@ -23,11 +34,11 @@ class MemoryClient(BaseClient):
             True if memory service is configured and can be reached,
             False otherwise
         """
+        # 没配置 URL 直接判定不可用。
         if settings.USER_PROFILING_BASE_URL is None:
             return False
 
-        # Check if the service is actually reachable by pinging the health
-        # endpoint
+        # 通过 /health 端点做连通性和健康检查。
         try:
             health_url = (
                 f"{settings.USER_PROFILING_BASE_URL.rstrip('/')}/health"
@@ -80,6 +91,7 @@ class MemoryClient(BaseClient):
         self,
         action: "Action",  # noqa: F821
     ):
+        """记录一次用户行为到记忆服务。"""
         if self.base_url is None:
             return None
         headers = {
@@ -155,6 +167,7 @@ class MemoryClient(BaseClient):
 
                 profiling_result = None
                 if profiling_result_tmp and len(profiling_result_tmp) > 0:
+                    # 只保留 is_confirmed == 1 的条目。
                     profiling_result = "\n".join(
                         [
                             item["memory"]

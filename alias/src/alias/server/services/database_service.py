@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+数据库服务层（新手教学注释版）
+
+职责：
+1) 管理数据库引擎与会话
+2) 负责迁移（升级/降级/初始化 Alembic）
+3) 初始化表结构并创建首个管理员账号
+"""
+
 from contextlib import asynccontextmanager
 from pathlib import Path
 from typing import AsyncGenerator
@@ -14,18 +23,22 @@ from alias.server.core.database.migration_manager import MigrationManager
 
 
 class DatabaseService:
-    """DatabaseService service for managing database operations"""
+    """数据库统一服务入口。"""
 
     def __init__(self) -> None:
+        # 从全局配置读取数据库 URI。
         db_uri = settings.SQLALCHEMY_DATABASE_URI
+        # SQLite 同步 URI -> 异步 URI（aiosqlite）。
         if db_uri and db_uri.startswith("sqlite:///"):
             db_uri = db_uri.replace("sqlite:///", "sqlite+aiosqlite:///", 1)
         self.db_uri = db_uri
 
+        # DatabaseManager 负责 engine/session 的底层管理。
         self.database_manager = DatabaseManager(
             db_uri=self.db_uri,
             connection_args=settings.DB_CONNECTION_ARGS,
         )
+        # 迁移配置路径（alembic.ini + alembic 脚本目录）。
         server_path = Path(__file__).parent.parent
         alembic_cfg_path = server_path / "alembic.ini"
         script_location = server_path / "alembic"
@@ -49,6 +62,7 @@ class DatabaseService:
     @asynccontextmanager
     async def get_session(self) -> AsyncGenerator[AsyncSession, None]:
         """Get database session as async context manager"""
+        # 统一通过 context manager 提供会话，自动提交/回滚/关闭。
         async with self.database_manager.session() as session:
             yield session
 
@@ -56,6 +70,7 @@ class DatabaseService:
         """Check if alembic_version table exists and has data"""
         try:
             async with self.engine.connect() as conn:
+                # 先检查表是否存在。
                 result = await conn.run_sync(
                     lambda sync_conn: inspect(sync_conn).get_table_names(),
                 )
@@ -81,6 +96,7 @@ class DatabaseService:
 
     async def init_alembic(self) -> None:
         """Initialize alembic version control"""
+        # 只有在版本表不存在/为空时才初始化。
         if not await self.has_alembic_version_table():
             logger.info("Initializing alembic version control...")
             await self.migration_manager.init_alembic_version()
@@ -202,6 +218,7 @@ class DatabaseService:
 
             async with self.get_session() as session:
                 user_service = UserService(session=session)
+                # 先按邮箱查是否已存在，避免重复创建。
                 super_user = await user_service.get_user_by_email(
                     settings.FIRST_SUPERUSER_EMAIL,
                 )

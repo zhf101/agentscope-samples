@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+Alias Runtime 启动入口（新手教学注释版）
+
+这个文件用于启动 AgentScope Runtime 形态的 Alias 服务。
+"""
+
 from agentscope_runtime.engine.app import AgentApp
 
 from alias.runtime.runtime_compat.runner.alias_runner import AliasRunner
@@ -12,6 +18,7 @@ def run_app(
     web_ui: bool = False,
     chat_mode: str = "general",
 ) -> None:
+    # 创建 Runtime 应用，并注入 AliasRunner 作为执行器。
     agent_app = AgentApp(
         runner=AliasRunner(
             default_chat_mode=chat_mode,
@@ -25,6 +32,7 @@ def run_app(
 
 
 def main() -> None:
+    # CLI 入口：解析命令行参数并启动服务。
     import argparse
 
     parser = argparse.ArgumentParser(prog="alias_agent_runtime")

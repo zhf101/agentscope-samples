@@ -1,8 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Memory Service - Main FastAPI Application
+Memory Service 主应用（新手教学注释版）
 
-A standalone service for memory functionality with memory management.
+这个文件负责：
+1) 创建 FastAPI app
+2) 注册中间件、异常处理器、路由
+3) 暴露健康检查接口
 """
 
 import os
@@ -47,7 +50,7 @@ app = FastAPI(
     version="0.1.0",
 )
 
-# Add CORS middleware
+# 添加 CORS 中间件（当前为全放开，生产环境建议限制来源）。
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -82,7 +85,7 @@ app.include_router(tool_memory.router)
 
 @app.get("/health")
 async def health_check():
-    """Health check endpoint"""
+    """健康检查接口。"""
     return {
         "status": "healthy",
         "service": "user_profiling_service",

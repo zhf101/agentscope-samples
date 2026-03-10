@@ -1,10 +1,9 @@
 # -*- coding: utf-8 -*-
 """
-Enhanced read_file tool function with offset and limit support.
+增强文件读取工具（新手教学注释版）。
 
-This module provides an improved read_file tool that wraps the
-original read_file functionality and adds support for
-reading specific line ranges from files.
+相比基础 read_file，新增 offset/limit 行范围读取能力，
+并支持部分文档格式自动转 markdown 后再读取。
 """
 import os
 from typing import Optional
@@ -119,6 +118,7 @@ class ImprovedFileOperations:
                     arguments=params,
                 )
             elif file_extension in TO_MARKDOWN_SUPPORT_MAPPING:
+                # 非纯文本先转 markdown，再统一走文本读取流程。
                 tool_res = _transfer_to_markdown_text(file_path, self.sandbox)
             else:
                 tool_res = {}

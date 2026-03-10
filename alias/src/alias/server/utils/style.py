@@ -1,6 +1,15 @@
 # -*- coding: utf-8 -*-
 # flake8: noqa: E501
 # pylint: disable=consider-using-f-string
+"""
+HTML/Markdown 渲染样式工具（新手教学注释版）。
+
+这个文件负责：
+1) 提供通用 CSS
+2) 用 Pygments 做代码高亮
+3) 把 markdown/csv 转成 HTML 预览片段
+"""
+
 import pygments
 from pygments.formatters import HtmlFormatter
 from pygments.lexers import get_lexer_by_name
@@ -171,6 +180,7 @@ def get_pygments_css(style="colorful"):
     :param style: Highlighting style name, defaults to 'colorful'.
     :return: CSS style string.
     """
+    # 返回对应主题的高亮 CSS 规则。
     return HtmlFormatter(style=style).get_style_defs(".highlight")
 
 
@@ -193,6 +203,7 @@ def highlight_code(content, lexer_name, style="colorful"):
         highlighted_code = pygments.highlight(content, lexer, formatter)
         return highlighted_code
     except Exception:
+        # 找不到 lexer 或高亮失败时，退化为普通 <pre>。
         return f"<pre>{content}</pre>"
 
 
@@ -273,4 +284,5 @@ def sanitize_html(html_content):
     Basic HTML sanitization.
     """
     # TODO: avoid xss attack!!!
+    # 当前实现仅占位，未做真正安全清洗。
     return html_content

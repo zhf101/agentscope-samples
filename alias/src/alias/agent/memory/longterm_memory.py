@@ -1,4 +1,14 @@
 # -*- coding: utf-8 -*-
+"""
+Agent 侧长期记忆适配器（新手教学注释版）。
+
+把 agent 会话与 memory-service 连接起来，提供：
+1) 会话结束时动作记录
+2) 用户画像检索
+3) 工具记忆检索
+4) 主动写入长期记忆
+"""
+
 import traceback
 import uuid
 from typing import Optional, Any
@@ -19,6 +29,7 @@ from alias.agent.memory.longterm_memory_utils import (
 
 
 def _get_query_from_msgs(msgs: Msg | list[Msg] | None) -> str:
+    """把 Msg 或 Msg 列表转换为查询字符串。"""
     if isinstance(msgs, Msg):
         return msgs.content
     elif isinstance(msgs, list):
@@ -28,6 +39,8 @@ def _get_query_from_msgs(msgs: Msg | list[Msg] | None) -> str:
 
 
 class AliasLongTermMemory(LongTermMemoryBase):
+    """Alias 在 agent 侧的长期记忆实现。"""
+
     def __init__(self, session_service: SessionService):
         super().__init__()
         self.session_service = session_service
@@ -177,6 +190,7 @@ class AliasLongTermMemory(LongTermMemoryBase):
                 "No query provided".
         """
         if not query:
+            # 统一返回 ToolResponse，避免调用方分支处理 None。
             return ToolResponse(
                 content=[
                     TextBlock(

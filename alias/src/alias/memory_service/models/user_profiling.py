@@ -1,6 +1,16 @@
 # -*- coding: utf-8 -*-
 from __future__ import annotations
 
+"""
+User Profiling 数据模型集合（新手教学注释版）。
+
+本文件主要包含：
+1) 行为枚举（ActionType/FeedbackType/ChatType）
+2) 请求/响应基类
+3) 用户画像相关请求响应模型
+4) 一组辅助工厂方法（create_*_action）
+"""
+
 import os
 from enum import Enum
 from typing import Any, List, Optional, Union
@@ -14,7 +24,7 @@ from pydantic import BaseModel, Field
 
 
 class ActionType(str, Enum):
-    """Action types based on the Action classes provided"""
+    """用户行为类型枚举。"""
 
     # Feedback actions
     LIKE = "LIKE"
@@ -95,7 +105,7 @@ class Roadmap(BaseModel):
 
 
 class BaseUserProfilingRequest(BaseModel):
-    """Base class for user profiling requests"""
+    """用户画像请求基类。"""
 
     uid: str = Field(description="User ID")
 
@@ -273,7 +283,7 @@ class UserProfilingClearRequest(BaseUserProfilingRequest):
 
 
 class UserProfilingRecordActionRequest(BaseUserProfilingRequest):
-    """Request for recording user actions"""
+    """记录用户行为的请求模型。"""
 
     session_id: str = Field(description="Session ID")
     action_type: Optional[ActionType] = Field(

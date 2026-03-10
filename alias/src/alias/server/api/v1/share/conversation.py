@@ -1,5 +1,17 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=unused-argument
+"""
+公开分享会话 API（新手教学注释版）
+
+本文件提供两类“公开访问”能力：
+1) 读取已分享会话及其消息
+2) 预览该会话下的公开文件
+
+补充（参考 docs/api_v1_share_conversation_py_total_beginner_walkthrough.md）：
+- 两个接口都做三层校验：存在性、归属、共享状态；
+- 文件预览使用 StreamingResponse 流式返回。
+"""
+
 import traceback
 import uuid
 from typing import List
@@ -37,10 +49,14 @@ from alias.server.exceptions.service import (
 
 
 class SharedConversationInfo(ConversationInfo):
+    """会话信息 + 消息列表的组合响应模型。"""
+
     messages: List[MessageInfo] = Field(default_factory=list)
 
 
 class GetSharedConversationResponse(ResponseBase):
+    """获取公开会话详情的响应模型。"""
+
     payload: SharedConversationInfo
 
 
@@ -60,6 +76,7 @@ async def get_share_conversation(
 
     service = ConversationService(session=session)
 
+    # 先检查会话是否存在。
     conversation = await service.get(
         id=conversation_id,
     )
@@ -84,6 +101,7 @@ async def get_share_conversation(
             extra_info={"conversation_id": conversation_id},
         )
 
+    # 只读取该用户该会话下的消息。
     filters = {"user_id": user_id, "conversation_id": conversation_id}
 
     message_service = MessageService(session=session)
@@ -92,6 +110,7 @@ async def get_share_conversation(
         filters=filters,
     )
 
+    # ORM 模型 -> schema 模型，方便统一返回格式。
     messages = [MessageInfo.model_validate(message) for message in messages]
 
     conversation_info = SharedConversationInfo(
@@ -119,6 +138,7 @@ async def preview_file_public(
     """Preview shared file (no authentication required)."""
     service = ConversationService(session=session)
 
+    # 同样先做三层校验：存在性、归属、共享状态。
     conversation = await service.get(
         id=conversation_id,
     )
@@ -145,6 +165,7 @@ async def preview_file_public(
 
     try:
         file_service = FileService(session=session)
+        # 由 file_service 返回流对象 + 媒体类型。
         file_stream, media_type = await file_service.preview_file(
             file_id=file_id,
             user_id=user_id,
@@ -152,6 +173,7 @@ async def preview_file_public(
         return StreamingResponse(file_stream, media_type=media_type)
 
     except Exception as e:
+        # 公开预览接口出错时，返回 500 并附带堆栈信息。
         raise HTTPException(
             status_code=500,
             detail=(

@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+Alembic 迁移管理器（新手教学注释版）
+
+职责：
+1) 创建迁移脚本
+2) 升级/降级数据库版本
+3) 查询当前 revision 与历史 revision
+"""
+
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, List, Optional
@@ -41,6 +50,7 @@ class MigrationManager:
         script_location: Path,
         db_uri: str,
     ) -> Config:
+        # 启动前先确保配置和脚本目录存在。
         if not Path(config_path).exists():
             raise FileNotFoundError(f"Alembic config not found: {config_path}")
         if not Path(script_location).exists():
@@ -55,6 +65,7 @@ class MigrationManager:
 
     def _clean_message(self, message: str) -> str:
         """Clean migration message for filename"""
+        # 把迁移信息清洗成适合文件名的 snake_case 样式。
         clean = "".join(c if c.isalnum() else "_" for c in message)
         clean = "_".join(filter(None, clean.split("_")))
         return clean.lower()
@@ -77,6 +88,7 @@ class MigrationManager:
             async with self.engine.connect() as connection:
 
                 def get_revision(sync_conn):
+                    # Alembic 通过 MigrationContext 读取当前版本号。
                     context = MigrationContext.configure(sync_conn)
                     return context.get_current_revision()
 
@@ -182,6 +194,7 @@ class MigrationManager:
                 return False
 
             if current_index + steps >= len(revisions):
+                # 超出历史范围时降到 base（初始状态）。
                 target_revision = "base"
             else:
                 target_revision = revisions[current_index + steps]["revision"]

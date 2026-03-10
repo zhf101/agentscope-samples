@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+LLM 调用管理器（新手教学注释版）。
+
+封装：
+1) 带重试的模型调用
+2) 多模型/格式器映射与统一调用入口
+"""
+
 import asyncio
 from typing import Any, Dict, Literal, Type
 from tenacity import retry, stop_after_attempt, wait_fixed
@@ -44,6 +52,7 @@ async def model_call_with_retry(
     Raises:
         Exception: If all retry attempts fail
     """
+    # 先把通用消息结构转换为模型可消费格式。
     format_messages = await formatter.format(msgs=messages)
 
     res = await model(
@@ -54,6 +63,7 @@ async def model_call_with_retry(
         kwargs=kwargs,
     )
     if model.stream:
+        # 流式模式下增量读取，最终返回完整内容。
         msg = Msg(msg_name, [], "assistant")
         async for content_chunk in res:
             msg.content = content_chunk.content
@@ -114,6 +124,7 @@ class LLMCallManager:
         Returns:
             String response from the LLM
         """
+        # 根据 model_name 找到对应模型与 formatter。
         model, formatter = self.model_formatter_mapping[model_name]
         raw_response = await model_call_with_retry(
             model=model,

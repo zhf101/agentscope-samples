@@ -1,4 +1,20 @@
 # -*- coding: utf-8 -*-
+"""
+用户画像记忆主实现（新手教学注释版）。
+
+这是 memory_service 里最核心、体量最大的模块之一，主要做：
+1) 候选记忆池（candidate_pool）写入与筛选
+2) 用户画像池（user_profiling_pool）提升与检索
+3) 用户信息池（user_info_pool）提取与维护
+4) 各类用户动作（收藏/点赞/编辑/对话等）的意图抽取与入库
+5) Qdrant 异常恢复与重试
+
+阅读建议：
+- 先看 `add_memory` / `retrieve` / `record_action`
+- 再看 `_handle_qdrant_corruption` 的容错逻辑
+- 最后看各类 `process_*_action` 方法
+"""
+
 import asyncio
 import datetime
 import uuid

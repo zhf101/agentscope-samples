@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 """
-Core business logic for user profiling service
+核心业务模块包入口（新手教学注释版）。
 """

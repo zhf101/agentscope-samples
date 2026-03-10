@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-Exception handlers for user profiling service
+异常处理器集合（新手教学注释版）
 """
 
 from datetime import datetime
@@ -21,7 +21,7 @@ async def memory_service_exception_handler(
     _request: Request,
     exc: MemoryServiceError,
 ):
-    """Handle custom memory service exceptions"""
+    """处理自定义 MemoryServiceError。"""
     error_response = ErrorResponse(
         error_code=exc.error_code,
         message=exc.message,
@@ -37,9 +37,10 @@ async def validation_exception_handler(
     _request: Request,
     exc: PydanticValidationError,
 ):
-    """Handle Pydantic validation errors"""
+    """处理 Pydantic 参数校验异常。"""
     error_details = []
     for error in exc.errors():
+        # 把字段路径拼成可读字符串，便于前端展示。
         error_details.append(
             {
                 "field": " -> ".join(str(loc) for loc in error["loc"]),
@@ -58,7 +59,7 @@ async def validation_exception_handler(
 
 
 async def general_exception_handler(_request: Request, exc: Exception):
-    """Handle all other exceptions"""
+    """兜底处理未捕获异常。"""
     import traceback
 
     logger.error(f"Unhandled exception: {exc}")

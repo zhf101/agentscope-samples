@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 """
-Configuration management for user profiling service
+配置模块包入口（新手教学注释版）。
 """

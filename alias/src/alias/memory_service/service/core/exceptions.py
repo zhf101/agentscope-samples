@@ -1,6 +1,11 @@
 # -*- coding: utf-8 -*-
 """
-Custom exception classes for memory service
+Memory Service 异常定义（新手教学注释版）
+
+统一异常结构：
+- message：错误说明
+- error_code：机器可读错误码
+- status_code：HTTP 状态码
 """
 
 from typing import Any, Dict, Optional
@@ -9,7 +14,7 @@ from pydantic import BaseModel
 
 
 class MemoryServiceError(Exception):
-    """Base exception for memory service"""
+    """memory service 基础异常。"""
 
     def __init__(
         self,
@@ -24,7 +29,7 @@ class MemoryServiceError(Exception):
 
 
 class ValidationError(MemoryServiceError):
-    """Validation error for request data"""
+    """请求参数校验异常。"""
 
     def __init__(self, message: str, field: Optional[str] = None):
         error_code = (
@@ -101,7 +106,7 @@ class EmptyStringFieldError(MemoryServiceError):
 
 
 class ErrorResponse(BaseModel):
-    """Standard error response format"""
+    """标准错误响应结构。"""
 
     error_code: str
     message: str

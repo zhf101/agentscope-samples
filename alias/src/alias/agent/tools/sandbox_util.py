@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+Sandbox 文件系统工具（新手教学注释版）。
+
+提供工作区目录/文件的安全操作封装，默认限制在 `/workspace` 下。
+"""
+
 import base64
 import io
 import json
@@ -68,6 +74,7 @@ TEXT_EXTENSIONS = {
 
 
 def _valid_workspace_path(workspace_path: str) -> bool:
+    """校验路径是否位于 /workspace 目录内。"""
     try:
         # Resolve both paths to absolute paths
         path = Path(workspace_path).resolve()

@@ -1,4 +1,4 @@
 # -*- coding: utf-8 -*-
 """
-API layer for user profiling service
+API 层包入口（新手教学注释版）。
 """

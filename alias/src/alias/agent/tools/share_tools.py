@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""工具共享函数（新手教学注释版）。"""
+
 from loguru import logger
 from .alias_toolkit import AliasToolkit
 
@@ -32,6 +34,7 @@ def share_tools(
         a warning is logged but execution continues.
     """
     for tool in tool_list:
+        # 仅在目标 toolkit 尚不存在该工具时复制。
         if tool in old_toolkit.tools and tool not in new_toolkit.tools:
             new_toolkit.tools[tool] = old_toolkit.tools[tool]
         elif tool in old_toolkit.tools:

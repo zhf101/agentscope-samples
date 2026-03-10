@@ -1,4 +1,6 @@
 # -*- coding: utf-8 -*-
+"""DashScope 多模态转文本工具（新手教学注释版）。"""
+
 from io import BytesIO
 import os
 import base64
@@ -18,6 +20,7 @@ def _get_binary_buffer(
     sandbox: AliasSandbox,
     audio_file_url: str,
 ):
+    """读取远程或本地文件内容并返回二进制缓冲区。"""
     if audio_file_url.startswith(("http://", "https://")):
         response = requests.get(audio_file_url)
         response.raise_for_status()
@@ -182,7 +185,7 @@ class DashScopeMultiModalTools:
                 operation failed.
         """
 
-        # Handle different types of image file URLs
+        # 支持 HTTP URL 与沙箱本地文件两种输入。
         if image_url.startswith(("http://", "https://")):
             # For web URLs, use the URL directly
             image_source = image_url

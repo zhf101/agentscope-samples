@@ -1,5 +1,15 @@
 # -*- coding: utf-8 -*-
-"""The user related API endpoints"""
+"""
+内部用户查询 API（新手教学注释版）
+
+提供：
+1) 分页查询用户列表
+2) 按 user_id 查询单个用户
+
+补充（参考 docs/api_v1_inner_user_py_total_beginner_walkthrough.md）：
+- 该文件路由统一加 InnerAPIAuth（内部鉴权）；
+- 列表接口先 count 再 paginate。
+"""
 import uuid
 from typing import Optional
 
@@ -17,15 +27,20 @@ from alias.server.services.user_service import UserService
 router = APIRouter(
     prefix="/users",
     tags=["inner/users"],
+    # 内部接口统一要求 Inner API 鉴权。
     dependencies=[InnerAPIAuth],
 )
 
 
 class ListUsersResponse(ResponseBase):
+    """用户列表响应：payload 为分页结构。"""
+
     payload: PagePayload[User]
 
 
 class GetUserResponse(ResponseBase):
+    """单个用户查询响应。"""
+
     payload: User
 
 
@@ -38,6 +53,7 @@ async def list_users(
     order_direction: Optional[str] = None,
 ) -> ListUsersResponse:
     """List users."""
+    # 统一分页参数解析。
     pagination = PaginationParams.create(
         page=page,
         page_size=page_size,
@@ -47,6 +63,7 @@ async def list_users(
 
     user_service = UserService(session=session)
 
+    # 空过滤条件表示“全部用户”。
     total = await user_service.count_by_fields({})
     users = await user_service.paginate(
         pagination=pagination,
@@ -69,6 +86,7 @@ async def get_user(
     """Get specified user."""
     user_service = UserService(session=session)
 
+    # 这里调用 service 的 get_user（内部会处理不存在等情况）。
     user = await user_service.get_user(
         user_id=user_id,
     )

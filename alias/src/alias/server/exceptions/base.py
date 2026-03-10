@@ -1,11 +1,17 @@
 # -*- coding: utf-8 -*-
-"""The base exceptions"""
+"""
+异常基类定义（新手教学注释版）
+
+思路：
+1) 先定义统一 BaseError（包含 code/message）
+2) 再按语义继承出 400/401/403/404/409/500/503 等异常
+"""
 
 from typing import Optional, Union
 
 
 class BaseError(Exception):
-    """The base exception"""
+    """项目内所有业务异常的父类。"""
 
     code: Optional[int] = None
     message: Optional[str] = None
@@ -16,14 +22,18 @@ class BaseError(Exception):
         code: Optional[int] = None,
         extra_info: Optional[Union[str, dict, list]] = None,
     ) -> None:
-        """Initialize the base exception"""
+        """初始化异常对象。"""
+        # 优先使用传入 message，否则使用类默认 message。
         self.message = message or self.message
+        # 额外信息追加到 message 里，方便排查。
         if extra_info:
             self.message = f"{self.message}: {extra_info}"
+        # 若传入 code，则覆盖类默认 code。
         self.code = self.code if code is None else code
         super().__init__(message)
 
     def __str__(self):
+        # 打印异常时优先返回 message。
         return self.message or self.__class__.__name__
 
 
@@ -105,7 +115,7 @@ class ExpiredError(BaseError):
 
 
 class ServiceError(BaseError):
-    """The base service error for third-party service calls"""
+    """第三方/远程服务调用失败的统一异常。"""
 
     code = 503
     message = "Service error"

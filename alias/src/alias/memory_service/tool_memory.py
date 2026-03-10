@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+工具记忆实现（新手教学注释版）。
+
+核心职责：
+1) 记录工具调用结果
+2) 检索工具使用经验
+3) 按时间/次数阈值触发工具记忆总结
+"""
+
 import json
 import os
 from datetime import datetime
@@ -66,6 +75,7 @@ class ToolMemory(BaseMemory):
         self._tool_summary_state: Dict[str, Dict[str, Dict[str, Any]]] = {}
 
     async def __aenter__(self):
+        # 延迟初始化：第一次进入上下文时初始化底层应用。
         self.inited = True
         return await self._app.__aenter__()
 
@@ -177,11 +187,11 @@ class ToolMemory(BaseMemory):
         self._init_tool_state(uid, tool_name)
         state = self._tool_summary_state[uid][tool_name]
 
-        # Check count threshold
+        # 规则1：未总结条数超过阈值。
         if state["unsummarized_count"] > self.summary_count_threshold:
             return True
 
-        # Check time threshold
+        # 规则2：距离上次总结时间超过阈值。
         if state["last_summary_time"] is None:
             return True
 
@@ -292,7 +302,7 @@ class ToolMemory(BaseMemory):
 
         logger.info(result)
 
-        # Group tool call results by tool name and increment counts
+        # 按工具名聚合调用次数，便于判断哪些工具该触发总结。
         tool_call_counts = {}
         for tcr in tool_call_results:
             tool_name = tcr.tool_name
@@ -316,7 +326,7 @@ class ToolMemory(BaseMemory):
                     f"last_summary_time={tool_state['last_summary_time']}",
                 )
 
-        # Only execute summary if there are tools that meet the criteria
+        # 只有满足阈值条件的工具才触发 summary_tool_memory。
         if tools_to_summarize:
             logger.info(
                 f"Executing summary_tool_memory for tools: "

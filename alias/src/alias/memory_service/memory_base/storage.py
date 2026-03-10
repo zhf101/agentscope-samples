@@ -1,4 +1,10 @@
 # -*- coding: utf-8 -*-
+"""
+记忆历史存储（SQLite）实现（新手教学注释版）。
+
+该文件提供 SQLiteManager，用于记录 memory 的历史变更轨迹。
+"""
+
 # import logging
 import sqlite3
 import threading
@@ -15,6 +21,7 @@ class SQLiteManager:
     # NOTE: Adapted from mem0's SQLiteManager:
     # https://github.com/mem0ai/mem0/blob/main/mem0/memory/storage.py
     def __init__(self, db_path: str = ":memory:"):
+        # 关闭同线程限制，配合内部锁做线程安全控制。
         self.db_path = db_path
         self.connection = sqlite3.connect(
             self.db_path,
@@ -158,6 +165,7 @@ class SQLiteManager:
         actor_id: Optional[str] = None,
         role: Optional[str] = None,
     ) -> None:
+        # 每次写历史都走事务，失败回滚。
         with self._lock:
             try:
                 self.connection.execute("BEGIN")

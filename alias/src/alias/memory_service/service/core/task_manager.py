@@ -1,4 +1,13 @@
 # -*- coding: utf-8 -*-
+"""
+后台任务管理器（新手教学注释版）
+
+特点：
+1) 使用 Redis 存储任务状态（可跨进程）
+2) 支持按状态/日期查询
+3) 支持过期清理和统计信息
+"""
+
 import asyncio
 import json
 from datetime import date, datetime, timedelta
@@ -39,7 +48,7 @@ class UserProfilingTaskManager:
             redis_password (str, optional): Redis password
                 (defaults to config)
         """
-        # Use provided parameters or fall back to config
+        # 优先使用传参，否则回退到配置文件。
         host = redis_host or redis_config.REDIS_HOST
         port = redis_port or redis_config.REDIS_PORT
         db = redis_db or redis_config.REDIS_DB
@@ -61,7 +70,7 @@ class UserProfilingTaskManager:
             logger.error(f"Failed to connect to Redis: {e}")
             raise
 
-        # Key prefixes for different data types
+        # 不同维度的 key 前缀。
         self.task_prefix = f"{redis_config.KEY_PREFIX}:task:"
         self.task_index_prefix = f"{redis_config.KEY_PREFIX}:index:"
         self.task_date_prefix = f"{redis_config.KEY_PREFIX}:date:"
@@ -119,7 +128,7 @@ class UserProfilingTaskManager:
                 kept for future use)
             task_type (str): Type of the task
         """
-        # Task object is kept for potential future use (e.g., cancellation)
+        # 目前任务对象不持久化，仅保留接口兼容性。
         # Assign to _ to indicate it's intentionally unused
         _ = task  # noqa: F841
         current_date = date.today()
@@ -199,7 +208,7 @@ class UserProfilingTaskManager:
                 self._serialize_task(task_data),
             )
 
-            # Update status-based sets
+            # 状态变化时，同步更新状态索引集合。
             if old_status != status:
                 # Remove from old status set
                 old_status_key = self._get_status_key(old_status)

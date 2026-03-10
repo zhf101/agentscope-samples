@@ -1,4 +1,12 @@
 # -*- coding: utf-8 -*-
+"""
+数据库底层管理器（新手教学注释版）
+
+职责：
+1) 创建异步 engine
+2) 提供 session 上下文
+3) 提供连接检查与建表/删表能力
+"""
 
 from typing import AsyncGenerator
 
@@ -17,6 +25,7 @@ from sqlalchemy.pool import AsyncAdaptedQueuePool
 
 class DatabaseManager:
     def __init__(self, db_uri: str, connection_args: dict = None) -> None:
+        # 把同步连接串转成异步驱动连接串。
         self.db_uri = self._convert_db_uri(db_uri)
 
         default_connection_args = {
@@ -52,6 +61,7 @@ class DatabaseManager:
         """Create SQLAlchemy async engine"""
         try:
             if self.db_uri.startswith("postgresql+asyncpg://"):
+                # PostgreSQL 场景启用连接池参数。
                 engine = create_async_engine(
                     self.db_uri,
                     poolclass=AsyncAdaptedQueuePool,
@@ -66,6 +76,7 @@ class DatabaseManager:
                 return engine
 
             elif self.db_uri.startswith("sqlite+aiosqlite://"):
+                # SQLite 需要关闭同线程限制。
                 connect_args = {"check_same_thread": False}
                 engine = create_async_engine(
                     self.db_uri,
@@ -103,9 +114,12 @@ class DatabaseManager:
 
         async with self._session_maker() as session:
             try:
+                # 业务代码执行区。
                 yield session
+                # 正常结束自动提交。
                 await session.commit()
             except Exception as e:
+                # 异常自动回滚，保证事务一致性。
                 await session.rollback()
                 raise e
             finally:
