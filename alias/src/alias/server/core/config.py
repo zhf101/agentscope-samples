@@ -50,6 +50,7 @@ Pydantic Settings 是 Pydantic 的扩展，专门用于配置管理：
 3. 计算字段（@computed_field）
 4. 环境变量配置
 5. 配置验证
+6. settings 全局实例的使用方式
 """
 
 import os
@@ -151,6 +152,11 @@ def parse_cors(v: Any) -> Union[list[str], str]:
         # 已经是列表或字符串，直接返回
         return v
     raise ValueError(v)
+
+# 额外说明（参考 docs/core_config_py_total_beginner_walkthrough.md）：
+# - BaseSettings 会自动读取环境变量与 .env 文件；
+# - @computed_field + @property 让“计算字段”也参与导出；
+# - Settings 是多重继承的“总配置”，最终用 settings = Settings() 暴露。
 
 
 # ==============================================================================

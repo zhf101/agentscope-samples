@@ -1,4 +1,15 @@
 # -*- coding: utf-8 -*-
+"""
+日志配置工具（中文教学注释版）。
+
+核心作用：
+- 初始化 Loguru；
+- 把请求上下文（request_id/user_id/ip）注入日志；
+- 同时输出到控制台和文件。
+
+参考 docs/utils_logger_py_total_beginner_walkthrough.md。
+"""
+
 import os
 import sys
 

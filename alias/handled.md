@@ -5,6 +5,7 @@
 - 注释必须为中文；如果文件内已有英文注释，不需要改动英文，只需继续添加中文注释。
 - 假设读者对语法、业务实现、代码架构都不了解，注释需尽量解释清楚。
 - 后续注释需参考 `docs/` 中对应文件的讲解内容。
+- models 需要结合项目分析字段含义。
 - 本文件需要记录：已处理的文件、尚未处理的文件。
 
 ## 已处理文件（services）
@@ -52,20 +53,13 @@
 - src\alias\server\dao\state_dao.py
 - src\alias\server\dao\user_dao.py
 
-## 尚未处理文件（src/alias/server 下除已处理之外）
-- src\alias\server\__init__.py
-- src\alias\server\_version.py
-- src\alias\server\alembic\env.py
-- src\alias\server\alembic\versions\20251125_1130_b8e52f791852_init.py
-- src\alias\server\alias_agent_app.py
+## 已处理文件（cache）
 - src\alias\server\cache\__init__.py
 - src\alias\server\cache\base_cache.py
 - src\alias\server\cache\plan_cache.py
 - src\alias\server\cache\state_cache.py
-- src\alias\server\clients\__init__.py
-- src\alias\server\clients\base_client.py
-- src\alias\server\clients\inner_client.py
-- src\alias\server\clients\memory_client.py
+
+## 已处理文件（core）
 - src\alias\server\core\__init__.py
 - src\alias\server\core\cache\__init__.py
 - src\alias\server\core\cache\redis_cache.py
@@ -88,15 +82,8 @@
 - src\alias\server\core\storage\oss_storage.py
 - src\alias\server\core\storage\storage_factory.py
 - src\alias\server\core\task_manager.py
-- src\alias\server\db\__init__.py
-- src\alias\server\db\init_db.py
-- src\alias\server\exceptions\__init__.py
-- src\alias\server\exceptions\base.py
-- src\alias\server\exceptions\service.py
-- src\alias\server\main.py
-- src\alias\server\middleware\error_handler_middleware.py
-- src\alias\server\middleware\request_context_middleware.py
-- src\alias\server\middleware\request_handler_middleware.py
+
+## 已处理文件（models）
 - src\alias\server\models\__init__.py
 - src\alias\server\models\action.py
 - src\alias\server\models\conversation.py
@@ -106,6 +93,38 @@
 - src\alias\server\models\plan.py
 - src\alias\server\models\state.py
 - src\alias\server\models\user.py
+
+## 已处理文件（utils）
+- src\alias\server\utils\__init__.py
+- src\alias\server\utils\base64_utils.py
+- src\alias\server\utils\logger.py
+- src\alias\server\utils\preview.py
+- src\alias\server\utils\redis.py
+- src\alias\server\utils\request_context.py
+- src\alias\server\utils\request_handler.py
+- src\alias\server\utils\security.py
+- src\alias\server\utils\style.py
+- src\alias\server\utils\timestamp.py
+
+## 尚未处理文件（src/alias/server 下除已处理之外）
+- src\alias\server\__init__.py
+- src\alias\server\_version.py
+- src\alias\server\alembic\env.py
+- src\alias\server\alembic\versions\20251125_1130_b8e52f791852_init.py
+- src\alias\server\alias_agent_app.py
+- src\alias\server\clients\__init__.py
+- src\alias\server\clients\base_client.py
+- src\alias\server\clients\inner_client.py
+- src\alias\server\clients\memory_client.py
+- src\alias\server\db\__init__.py
+- src\alias\server\db\init_db.py
+- src\alias\server\exceptions\__init__.py
+- src\alias\server\exceptions\base.py
+- src\alias\server\exceptions\service.py
+- src\alias\server\main.py
+- src\alias\server\middleware\error_handler_middleware.py
+- src\alias\server\middleware\request_context_middleware.py
+- src\alias\server\middleware\request_handler_middleware.py
 - src\alias\server\schemas\__init__.py
 - src\alias\server\schemas\action.py
 - src\alias\server\schemas\auth.py
@@ -119,13 +138,3 @@
 - src\alias\server\schemas\response.py
 - src\alias\server\schemas\session_entity.py
 - src\alias\server\schemas\user.py
-- src\alias\server\utils\__init__.py
-- src\alias\server\utils\base64_utils.py
-- src\alias\server\utils\logger.py
-- src\alias\server\utils\preview.py
-- src\alias\server\utils\redis.py
-- src\alias\server\utils\request_context.py
-- src\alias\server\utils\request_handler.py
-- src\alias\server\utils\security.py
-- src\alias\server\utils\style.py
-- src\alias\server\utils\timestamp.py

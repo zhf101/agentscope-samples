@@ -1,5 +1,11 @@
 # -*- coding: utf-8 -*-
-"""Pickle 序列化器实现（新手教学注释版）。"""
+"""Pickle 序列化器实现（新手教学注释版）。
+
+补充（参考 docs/core_serializer_pikcle_serializer_py_total_beginner_walkthrough.md）：
+- serialize 使用 pickle.dumps 输出 bytes；
+- deserialize 使用 pickle.loads 恢复对象；
+- 反序列化有安全风险，勿加载不可信数据。
+"""
 
 import pickle
 from typing import Any, Optional, Type, TypeVar

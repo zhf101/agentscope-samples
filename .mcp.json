@@ -1,0 +1,11 @@
+{
+  "mcpServers": {
+    "deepwiki": {
+      "type": "streamable_http",
+      "url": "https://mcp.deepwiki.com/mcp",
+      "headers": {
+        "Accept": "application/json, text/event-stream"
+      }
+    }
+  }
+}

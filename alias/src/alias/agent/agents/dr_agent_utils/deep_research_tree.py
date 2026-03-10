@@ -1,11 +1,84 @@
 # -*- coding: utf-8 -*-
+"""
+================================================================================
+Deep Research Tree - 深度研究树节点
+================================================================================
+
+【什么是研究树？】
+深度研究是一个递归分解的过程，形成树状结构：
+
+```
+                    根节点（原始问题）
+                    /        |        \
+               子问题1   子问题2   子问题3
+               /    \       |         \
+           子子问题1 子子问题2  ...      ...
+```
+
+【树的组成】
+每个节点是一个 DeepResearchTreeNode：
+- current_executable：当前要执行的任务
+- worker：执行任务的 Agent
+- children_nodes：子节点列表
+- node_report：节点的研究报告
+
+【执行流程】
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          DeepResearchTreeNode.execute()                      │
+│                                                                              │
+│  1. 执行前置钩子（pre_execute_hook）                                          │
+│     例如：生成假设                                                            │
+│                                                                              │
+│  2. 创建/恢复 Worker                                                          │
+│     如果 worker 是 None，创建新的 Worker                                      │
+│     如果 worker 是 dict，从状态恢复 Worker                                    │
+│                                                                              │
+│  3. 执行 Worker                                                               │
+│     调用 Worker 处理任务                                                      │
+│     获取结构化响应                                                            │
+│                                                                              │
+│  4. 记录结果                                                                   │
+│     保存执行结果到 node_execution_result                                      │
+│     更新任务状态                                                              │
+│                                                                              │
+│  5. 生成报告                                                                   │
+│     让 Worker 生成详细的节点报告                                              │
+│                                                                              │
+│  6. 构建子节点                                                                 │
+│     如果深度未达上限：                                                        │
+│     - 根据响应构建子任务                                                       │
+│     - 为每个子任务创建子节点                                                   │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+【深度限制】
+max_depth 控制树的最大深度，防止无限递归：
+- level 0: 原始问题
+- level 1: 第一层子问题
+- level 2: 第二层子问题
+- ...
+
+【状态保存和恢复】
+使用 StateModule 的能力：
+- state_dict()：导出状态
+- load_state_dict()：恢复状态
+- register_state()：注册需要保存的属性
+
+【学习要点】
+1. 树形数据结构
+2. 递归执行
+3. 状态管理（StateModule）
+4. 异步编程（async/await）
+"""
 import os
 import copy
 import base64
-import inspect
+import inspect  # 用于检查函数是否是协程
 from typing import Callable, Optional, Literal, Union, Coroutine, Any
+
 from loguru import logger
-from agentscope.module import StateModule
+from agentscope.module import StateModule  # 状态模块基类
 from agentscope.message import Msg
 
 from alias.agent.agents._alias_agent_base import AliasAgentBase
@@ -22,7 +95,28 @@ from alias.agent.agents.dr_agent_utils.deep_research_worker_response import (
 from alias.agent.tools.sandbox_util import get_workspace_file
 
 
+# ==============================================================================
+# DeepResearchTreeNode 类定义
+# ==============================================================================
 class DeepResearchTreeNode(StateModule):
+    """
+    深度研究树节点 - 研究树的核心构建单元。
+
+    【继承自 StateModule】
+    StateModule 提供状态管理能力：
+    - state_dict()：导出状态字典
+    - load_state_dict()：从字典恢复状态
+    - register_state()：注册需要管理的状态属性
+
+    【核心属性】
+    - task_type：任务类型（general/finance）
+    - current_executable：当前要执行的任务
+    - level：节点层级
+    - max_depth：最大深度
+    - worker：执行任务的 Agent
+    - children_nodes：子节点列表
+    - node_report：节点报告内容
+    """
     def __init__(
         self,
         task_type: Literal["general", "finance"],

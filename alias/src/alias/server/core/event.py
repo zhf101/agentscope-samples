@@ -12,6 +12,11 @@
 1. Agent 与 ChatService 之间异步通信
 2. 驱动流式输出（SSE）
 3. 统一停止、错误、心跳等控制信号
+
+补充（参考 docs/event_py_total_beginner_walkthrough.md）：
+- 事件类型用 Enum 统一约束；
+- 基类 Event 只定义最小字段；
+- ErrorEvent 额外带 code/message。
 """
 
 

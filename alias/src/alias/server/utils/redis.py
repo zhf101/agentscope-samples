@@ -5,6 +5,11 @@ Redis 工具函数（新手教学注释版）。
 提供：
 1) 构建 redis URL
 2) 初始化异步 Redis 客户端
+
+补充（参考 docs/utils_redis_py_total_beginner_walkthrough.md）：
+- get_redis_url 负责拼接连接串；
+- init_aio_redis 负责创建异步客户端；
+- redis_client 是模块级复用实例。
 """
 
 from typing import Optional
@@ -63,6 +68,7 @@ def init_aio_redis(
         password=password,
         username=username,
     )
+    # aioredis.from_url 会返回一个异步客户端连接
     client = aioredis.from_url(redis_url)
     return client
 

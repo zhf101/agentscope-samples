@@ -5,6 +5,10 @@
 任何序列化器都要实现：
 - serialize: 对象 -> 可存储/可传输格式
 - deserialize: 数据 -> 对象
+
+补充（参考 docs/core_serializer_base_py_total_beginner_walkthrough.md）：
+- BaseSerializer 是统一契约；
+- 子类必须实现两个抽象方法。
 """
 
 from abc import ABC, abstractmethod

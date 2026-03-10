@@ -6,6 +6,10 @@
 例如：
 - AsyncQueueEventManager：用 asyncio.Queue 存在内存里
 - 未来可扩展：Redis 队列、Kafka 队列等
+
+补充（参考 docs/event_manager_base_py_total_beginner_walkthrough.md）：
+- listen() 是核心：带心跳与超时保护；
+- stop() 会放入 StopEvent，通知上层收尾。
 """
 
 import asyncio

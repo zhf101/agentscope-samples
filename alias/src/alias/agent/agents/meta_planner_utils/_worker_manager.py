@@ -1,6 +1,78 @@
 # -*- coding: utf-8 -*-
 """
-Coordination handler module for meta planner
+================================================================================
+WorkerManager - Worker 管理器
+================================================================================
+
+【什么是 WorkerManager？】
+WorkerManager 是 MetaPlanner 的"人事部门"：
+- 创建 Worker（招聘）
+- 管理 Worker 池（员工档案）
+- 分配任务（派工）
+- 收集结果（汇报）
+
+【现实类比】
+想象一个公司的人事经理：
+
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          WorkerManager（人事经理）                           │
+│                                                                              │
+│  职责：                                                                      │
+│  1. 招聘（create_worker）                                                    │
+│     - 根据任务需求创建合适的 Worker                                           │
+│     - 配置 Worker 的工具和提示词                                              │
+│                                                                              │
+│  2. 管理（worker_pool）                                                      │
+│     - 维护所有 Worker 的档案                                                 │
+│     - 跟踪 Worker 的状态和能力                                               │
+│                                                                              │
+│  3. 派工（execute_worker）                                                   │
+│     - 把子任务分配给合适的 Worker                                            │
+│     - 监控执行进度                                                           │
+│                                                                              │
+│  4. 汇报（收集结果）                                                          │
+│     - 收集 Worker 的执行结果                                                 │
+│     - 更新任务状态                                                           │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+【Worker 池概念】
+worker_pool 是一个字典，存储所有可用的 Worker：
+{
+    "browser_worker": (WorkerInfo, BrowserWorker实例),
+    "ds_worker": (WorkerInfo, DSWorker实例),
+    "custom_worker": (WorkerInfo, ReActWorker实例),
+}
+
+【工作流程】
+
+用户任务："分析阿里巴巴股票"
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          MetaPlanner                                         │
+│                                                                              │
+│  1. 分析任务，分解成子任务                                                    │
+│  2. 调用 WorkerManager 创建/选择 Worker                                      │
+│  3. 执行 Worker                                                              │
+│  4. 收集结果                                                                  │
+└─────────────────────────────┬───────────────────────────────────────────────┘
+                              │
+                              ▼
+┌─────────────────────────────────────────────────────────────────────────────┐
+│                          WorkerManager                                       │
+│                                                                              │
+│  subtask_1: "搜索股价" → browser_worker                                      │
+│  subtask_2: "分析数据" → ds_worker                                           │
+│  subtask_3: "生成报告" → custom_worker                                       │
+│                                                                              │
+└─────────────────────────────────────────────────────────────────────────────┘
+
+【学习要点】
+1. 状态管理（StateModule）
+2. 异步编程（async/await）
+3. 工厂模式（创建 Worker）
+4. 对象池模式（管理 Worker 池）
 """
 import os
 from pathlib import Path
@@ -9,13 +81,15 @@ from typing import Optional, Literal, List, Any
 import asyncio
 from agentscope import logger
 
-from agentscope.module import StateModule
+# AgentScope 框架导入
+from agentscope.module import StateModule  # 状态模块基类
 from agentscope.memory import InMemoryMemory, MemoryBase, LongTermMemoryBase
 from agentscope.tool import ToolResponse
 from agentscope.message import Msg, TextBlock, ToolUseBlock, ToolResultBlock
 from agentscope.model import ChatModelBase, DashScopeChatModel
 from agentscope.formatter import FormatterBase, DashScopeChatFormatter
 
+# 项目内部导入
 from alias.runtime.alias_sandbox import AliasSandbox
 from alias.agent.tools import AliasToolkit, share_tools
 from alias.agent.agents._react_worker import ReActWorker
@@ -31,6 +105,9 @@ from ._planning_notebook import WorkerInfo
 from ._planning_notebook import PlannerNoteBook
 
 
+# ==============================================================================
+# 辅助函数
+# ==============================================================================
 def rebuild_reactworker(
     worker_info: WorkerInfo,
     old_toolkit: AliasToolkit,
@@ -41,41 +118,49 @@ def rebuild_reactworker(
     exclude_tools: Optional[list[str]] = None,
 ) -> ReActWorker:
     """
-    Rebuild a ReActAgent worker with specified configuration and tools.
+    重建 ReActWorker - 从保存的信息恢复一个 Worker。
 
-    Creates a new ReActAgent using worker information and toolkit
-    configuration. Tools are shared from the old toolkit to the new one,
-    excluding any specified tools.
+    【什么时候需要重建？】
+    当 Agent 状态从数据库恢复时，Worker 也需要恢复：
+    - 从 worker_info 获取 Worker 的配置
+    - 创建新的 toolkit 并共享需要的工具
+    - 创建新的 ReActWorker 实例
+
+    【为什么不能直接保存 Worker 实例？】
+    Worker 实例包含很多不能序列化的内容：
+    - 模型连接
+    - 沙箱引用
+    - 异步状态
+
+    所以只保存配置信息（WorkerInfo），
+    需要时用配置信息重建 Worker。
 
     Args:
-        worker_info (WorkerInfo): Information about the worker including name,
-            system prompt, and tool lists.
-        old_toolkit (Toolkit): Source toolkit containing available tools.
-        new_toolkit (Toolkit): Destination toolkit to receive shared tools.
-        memory (Optional[MemoryBase], optional): Memory instance for the agent.
-            Defaults to InMemoryMemory() if None.
-        model (Optional[ChatModelBase], optional): Chat model instance.
-        formatter (Optional[FormatterBase], optional): Message formatter.
-            Defaults to DashScopeChatFormatter() if None.
-        exclude_tools (Optional[list[str]], optional): List of tool names to
-            exclude from sharing. Defaults to empty list if None.
+        worker_info: Worker 的配置信息
+        old_toolkit: 源工具包（包含所有工具）
+        new_toolkit: 目标工具包（要共享到的）
+        memory: 记忆组件
+        model: 聊天模型
+        formatter: 消息格式化器
+        exclude_tools: 要排除的工具列表
 
     Returns:
-        ReActAgent: A configured ReActAgent instance ready for use.
-
-    Note:
-        - The default model uses the DASHSCOPE_API_KEY environment variable
-        - Tools are shared based on worker_info.tool_lists minus excluded tools
-        - The agent is configured with thinking enabled and streaming support
+        ReActWorker: 重建的 Worker 实例
     """
     if exclude_tools is None:
         exclude_tools = []
+
+    # 过滤要排除的工具
     tool_list = [
         tool_name
         for tool_name in worker_info.tool_lists
         if tool_name not in exclude_tools
     ]
+
+    # 共享工具从旧工具包到新工具包
     share_tools(old_toolkit, new_toolkit, tool_list)
+
+    # 设置默认模型
     model = (
         model
         if model
@@ -85,6 +170,8 @@ def rebuild_reactworker(
             stream=True,
         )
     )
+
+    # 创建并返回 Worker
     return ReActWorker(
         name=worker_info.worker_name,
         sys_prompt=worker_info.sys_prompt,
@@ -98,26 +185,25 @@ def rebuild_reactworker(
 
 async def check_file_existence(file_path: str, toolkit: AliasToolkit) -> bool:
     """
-    Check if a file exists using the read_file tool from the provided toolkit.
+    检查文件是否存在 - 通过尝试读取文件来判断。
 
-    This function attempts to verify file existence by calling the read_file
-    tool and checking the response for error indicators. It requires the
-    toolkit to have a 'read_file' tool available.
+    【为什么不直接用 os.path.exists？】
+    文件可能在沙箱中，而不是在本地文件系统。
+    所以需要通过工具来检查。
+
+    【工作原理】
+    1. 调用 read_file 工具
+    2. 如果返回 "no such file or directory"，说明文件不存在
+    3. 否则说明文件存在
 
     Args:
-        file_path (str): The path to the file to check for existence.
-        toolkit (Toolkit): The toolkit containing the read_file tool.
+        file_path: 文件路径
+        toolkit: 工具包（需要包含 read_file 工具）
 
     Returns:
-        bool: True if the file exists and is readable, False otherwise.
-
-    Note:
-        - Returns False if the 'read_file' tool is not available in the toolkit
-        - Returns False if any exception occurs during the file read attempt
-        - Uses error message detection ("no such file or directory") to
-            determine existence
+        bool: 文件是否存在
     """
-    # Get read_file tool from AliasToolkit
+    # 获取 read_file 工具
     if "read_file" in toolkit.tools:
         read_toolkit = toolkit
     else:
@@ -127,6 +213,7 @@ async def check_file_existence(file_path: str, toolkit: AliasToolkit) -> bool:
         )
         return False
 
+    # 构建工具调用
     params = {
         "path": file_path,
     }
@@ -138,6 +225,7 @@ async def check_file_existence(file_path: str, toolkit: AliasToolkit) -> bool:
     )
 
     try:
+        # 执行工具调用
         tool_res = await read_toolkit.call_tool_function(read_file_block)
         tool_res_msg = Msg(
             "system",
@@ -152,10 +240,11 @@ async def check_file_existence(file_path: str, toolkit: AliasToolkit) -> bool:
             "system",
         )
         async for chunk in tool_res:
-            # Turn into a tool result block
             tool_res_msg.content[0][  # type: ignore[index]
                 "output"
             ] = chunk.content
+
+        # 检查错误信息
         if "no such file or directory" in str(tool_res_msg.content):
             return False
         else:
@@ -164,14 +253,35 @@ async def check_file_existence(file_path: str, toolkit: AliasToolkit) -> bool:
         return False
 
 
+# ==============================================================================
+# WorkerManager 类定义
+# ==============================================================================
 class WorkerManager(StateModule):
     """
-    Handles coordination between meta planner and worker agents.
+    Worker 管理器 - 管理 Worker Agent 的生命周期和任务分配。
 
-    This class manages the creation, selection, and execution of worker agents
-    to accomplish subtasks in a roadmap. It provides functionality for dynamic
-    worker creation, worker selection based on task requirements, and
-    processing worker responses to update the overall task progress.
+    【继承自 StateModule】
+    StateModule 提供状态管理能力：
+    - register_state：注册需要保存的状态
+    - state_dict：导出状态
+    - load_state_dict：加载状态
+
+    【核心功能】
+    1. Worker 创建：根据任务需求动态创建 Worker
+    2. Worker 池管理：维护所有 Worker 的信息
+    3. 任务执行：分配任务给 Worker 并收集结果
+
+    【内置 Worker】
+    系统预先创建了一些常用的 Worker：
+    - browser_worker：浏览器操作
+    - ds_worker：数据科学任务
+    - deep_research_worker：深度研究
+
+    【动态 Worker】
+    根据任务需要，可以动态创建自定义 Worker：
+    - 配置特定的工具
+    - 设置专门的系统提示词
+    - 赋予特定的能力
     """
 
     def __init__(
@@ -188,55 +298,65 @@ class WorkerManager(StateModule):
         session_service: Any = None,
         long_term_memory: Optional[LongTermMemoryBase] = None,
     ):
-        """Initialize the CoordinationHandler.
-        Args:
-            worker_model (ChatModelBase):
-                Main language model for coordination decisions
-            worker_formatter (FormatterBase):
-                Message formatter for model communication
-            planner_notebook (PlannerNoteBook):
-                Notebook containing roadmap and file information
-            worker_full_toolkit (Toolkit):
-                Complete toolkit available to workers
-            agent_working_dir (str):
-                Working directory for the agent operations
-            worker_pool: dict[str, tuple[WorkerInfo, ReActAgent]]:
-                workers that has already been created
-            session_service (Any):
-                Session service instance
-            long_term_memory (Optional[LongTermMemoryBase]):
-                Long-term memory instance, if None, long-term memory features
-                will be disabled. Only works when memory service is available
-                and healthy. If provided, the tool memory will be retrieved
-                and added to the worker system prompt.
         """
+        初始化 Worker 管理器。
+
+        【参数详解】
+        - worker_model: Worker 使用的语言模型
+        - worker_formatter: 消息格式化器
+        - planner_notebook: 规划笔记本（共享的任务信息）
+        - worker_full_toolkit: 包含所有可用工具的工具包
+        - agent_working_dir: Agent 工作目录
+        - sandbox: 沙箱环境
+        - worker_pool: 预置的 Worker 池
+        - session_service: 会话服务
+        - long_term_memory: 长期记忆（可选）
+        """
+        # 调用父类初始化
         super().__init__()
-        self.planner_notebook = planner_notebook
-        self.worker_model = worker_model
-        self.worker_formatter = worker_formatter
+
+        # ==================== 保存核心属性 ====================
+        self.planner_notebook = planner_notebook  # 规划笔记本
+        self.worker_model = worker_model          # Worker 模型
+        self.worker_formatter = worker_formatter  # 格式化器
         self.worker_pool: dict[str, tuple[WorkerInfo, ReActWorker]] = (
             worker_pool if worker_pool else {}
         )
-        self.agent_working_dir = agent_working_dir
-        self.worker_full_toolkit = worker_full_toolkit
-        self.base_sandbox = sandbox
-        self.session_service = session_service
-        self.long_term_memory = long_term_memory
+        self.agent_working_dir = agent_working_dir     # 工作目录
+        self.worker_full_toolkit = worker_full_toolkit # 完整工具包
+        self.base_sandbox = sandbox                    # 沙箱
+        self.session_service = session_service         # 会话服务
+        self.long_term_memory = long_term_memory       # 长期记忆
 
+        # ==================== 状态恢复函数 ====================
+        """
+        【为什么需要 reconstruct_workerpool？】
+        当从数据库恢复状态时，worker_pool 只保存了 WorkerInfo，
+        需要用这些信息重建实际的 Worker 实例。
+
+        【重建过程】
+        1. 遍历保存的 Worker 信息
+        2. 跳过内置 Worker（它们会在别处重建）
+        3. 用 WorkerInfo 重建 ReActWorker
+        """
         def reconstruct_workerpool(worker_pool_dict: dict) -> dict:
             rebuild_worker_pool = self.worker_pool
             for k, v in worker_pool_dict.items():
+                # 从字典创建 WorkerInfo
                 worker_info = WorkerInfo(**v)
-                # build-in agents
+
+                # 跳过内置 Agent（它们有专门的重建逻辑）
                 if k in [
                     DEFAULT_DEEP_RESEARCH_AGENT_NAME,
                     DEFAULT_DS_AGENT_NAME,
                     DEFAULT_BROWSER_WORKER_NAME,
                 ]:
                     continue
-                # Handle regular worker reconstruction
+
+                # 创建新的工具包
                 new_toolkit = AliasToolkit(sandbox=self.base_sandbox)
 
+                # 重建 Worker
                 rebuild_worker_pool[k] = (
                     worker_info,
                     rebuild_reactworker(
@@ -251,6 +371,16 @@ class WorkerManager(StateModule):
 
             return rebuild_worker_pool
 
+        # ==================== 注册状态 ====================
+        """
+        【register_state 是什么？】
+        来自父类 StateModule，用于注册需要保存/恢复的状态。
+
+        参数说明：
+        - "worker_pool": 状态名称
+        - lambda: 序列化函数（把对象转成可保存的格式）
+        - custom_from_json: 反序列化函数（从保存的数据恢复对象）
+        """
         self.register_state(
             "worker_pool",
             lambda x: {k: v[0].model_dump() for k, v in x.items()},
@@ -265,9 +395,21 @@ class WorkerManager(StateModule):
         worker_type: Literal["built-in", "dynamic-built"] = "dynamic",
     ) -> None:
         """
-        Register a worker agent in the worker pool.
+        注册 Worker 到 Worker 池。
 
-        Adds a worker agent to the available pool with appropriate metadata.
+        【什么时候调用？】
+        当创建新的 Worker 时，需要把它注册到池中，
+        这样后续才能使用它。
+
+        【处理名称冲突】
+        如果 Worker 名称已存在，会自动添加版本号：
+        - worker_name -> worker_name_v1 -> worker_name_v2 -> ...
+
+        Args:
+            agent: 要注册的 Worker
+            description: Worker 的功能描述
+            worker_type: Worker 类型（built-in 或 dynamic-built）
+        """
         Handles name conflicts by appending version numbers when necessary.
 
         Args:

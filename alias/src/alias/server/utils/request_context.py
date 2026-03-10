@@ -1,5 +1,12 @@
 # -*- coding: utf-8 -*-
 # pylint: disable=R1721
+"""
+请求上下文工具（中文教学注释版）。
+
+用于在异步链路中保存“当前请求信息”，比如 request_id、user_id、IP 等。
+参考 docs/utils_request_context_py_total_beginner_walkthrough.md。
+"""
+
 import uuid
 from contextvars import ContextVar
 from typing import Dict, Optional, Tuple
@@ -31,6 +38,7 @@ def parse_user_agent(user_agent_string: Optional[str]) -> Dict[str, str]:
 
 def get_ip_address(request: Request) -> str:
     """Get the client's IP address from the request."""
+    # 优先取反向代理设置的 X-Forwarded-For
     forwarded = request.headers.get("X-Forwarded-For")
     if forwarded:
         return forwarded.split(",")[0].strip()
@@ -39,6 +47,7 @@ def get_ip_address(request: Request) -> str:
 
 def get_request_id_from_header(request: Request) -> str | None:
     """Extract request ID from headers."""
+    # 支持多种常见 request id 头
     HEADERS = {
         "X-Request-ID",
         "Request-ID",
@@ -54,6 +63,7 @@ def get_request_id_from_header(request: Request) -> str | None:
 def get_authorization_scheme_param(
     authorization_header_value: Optional[str],
 ) -> Tuple[str, str]:
+    # 把 "Bearer xxx" 拆成 ("Bearer", "xxx")
     if not authorization_header_value:
         return "", ""
     scheme, _, param = authorization_header_value.partition(" ")
@@ -61,6 +71,7 @@ def get_authorization_scheme_param(
 
 
 def get_token(request: Request) -> Optional[str]:
+    # 从 Authorization: Bearer <token> 中提取 token
     authorization = request.headers.get("Authorization")
     scheme, param = get_authorization_scheme_param(authorization)
     if not authorization or scheme.lower() != "bearer":
@@ -81,12 +92,14 @@ class RequestContext:
     def from_request(cls, request: Request) -> "RequestContext":
         """Create a RequestContext from a request."""
         instance = cls()
+        # 1) request_id：优先用头部，否则生成新的 UUID
         instance.request_id = get_request_id_from_header(request) or str(
             uuid.uuid4(),
         )
         try:
             token = get_token(request)
             if token:
+                # 2) 解析 JWT 获取 user_id / tenant_id
                 payload = JwtService().decode(token) or {}
                 instance.user_id = payload.get("user_id", None)
                 instance.tenant_id = payload.get(
@@ -96,6 +109,7 @@ class RequestContext:
         except Exception:
             pass
 
+        # 3) 采集 IP / UA / 浏览器信息
         instance.ip_address = get_ip_address(request)
         instance.user_agent = request.headers.get(
             "User-Agent",
@@ -108,6 +122,7 @@ class RequestContext:
     def to_dict(self) -> Dict[str, str]:
         """Convert the RequestContext to a dictionary."""
         context = {}
+        # 只加入有值的字段，避免日志污染
         for key in [
             "request_id",
             "ip_address",

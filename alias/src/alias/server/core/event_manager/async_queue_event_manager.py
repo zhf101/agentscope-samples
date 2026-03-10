@@ -5,6 +5,10 @@
 为什么用 asyncio.Queue？
 - 生产者（Agent/Service）和消费者（ChatService 输出流）解耦。
 - 天然支持异步场景，不阻塞事件循环。
+
+补充（参考 docs/async_queue_event_manager_py_total_beginner_walkthrough.md）：
+- 子类只负责“选队列”，核心逻辑在 BaseEventManager；
+- 适合单进程内存队列场景。
 """
 
 import uuid

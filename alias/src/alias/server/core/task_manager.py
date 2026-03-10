@@ -10,6 +10,11 @@
 核心思路：
 - 本地内存字典 `_tasks`：保存当前进程内任务。
 - Redis 键 `task_stop:<task_id>`：作为跨进程停止信号。
+
+补充（参考 docs/task_manager_py_total_beginner_walkthrough.md）：
+- stop_task 先本地停止，再写 Redis 信号；
+- _listen_stop_signals 轮询 Redis 做跨进程停止；
+- 单例模式保证全局只有一个任务管理器。
 """
 
 import asyncio

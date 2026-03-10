@@ -6,6 +6,11 @@
 1) 创建异步 engine
 2) 提供 session 上下文
 3) 提供连接检查与建表/删表能力
+
+补充（参考 docs/core_database_database_manager_py_total_beginner_walkthrough.md）：
+- 自动把同步 URI 转成异步驱动；
+- session() 内部做 commit/rollback；
+- create_tables/drop_tables 操作 SQLModel 元数据。
 """
 
 from typing import AsyncGenerator
@@ -51,8 +56,10 @@ class DatabaseManager:
 
     def _convert_db_uri(self, uri: str) -> str:
         """Convert database URI to async version"""
+        # PostgreSQL 同步 URI -> asyncpg
         if uri.startswith("postgresql://"):
             return uri.replace("postgresql://", "postgresql+asyncpg://")
+        # SQLite 同步 URI -> aiosqlite
         elif uri.startswith("sqlite://"):
             return uri.replace("sqlite://", "sqlite+aiosqlite://")
         return uri
@@ -128,6 +135,7 @@ class DatabaseManager:
     async def check_connection(self) -> bool:
         """Check database connection"""
         try:
+            # 执行简单查询验证连接是否可用
             async with self.session() as session:
                 await session.execute(text("SELECT 1"))
             return True
@@ -138,6 +146,7 @@ class DatabaseManager:
     async def create_tables(self) -> None:
         """Create all tables"""
         try:
+            # SQLModel.metadata 包含所有模型定义
             async with self.engine.begin() as conn:
                 await conn.run_sync(SQLModel.metadata.create_all)
             logger.info("Tables created successfully")
@@ -148,6 +157,7 @@ class DatabaseManager:
     async def drop_tables(self) -> None:
         """Drop all tables"""
         try:
+            # 清空所有表（危险操作，慎用）
             async with self.engine.begin() as conn:
                 await conn.run_sync(SQLModel.metadata.drop_all)
             logger.info("Tables dropped successfully")

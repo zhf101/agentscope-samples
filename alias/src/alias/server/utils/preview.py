@@ -1,4 +1,11 @@
 # -*- coding: utf-8 -*-
+"""
+文件预览工具（中文教学注释版）。
+
+把原始字节内容转成“可预览”的 HTML 或原始流。
+参考 docs/utils_preview_py_total_beginner_walkthrough.md。
+"""
+
 import json
 import mimetypes
 
@@ -18,7 +25,9 @@ from alias.server.utils.style import (
 
 
 def preview_file(file_path, file_ext, raw_data) -> Tuple[BytesIO, str]:
+    # 1) 猜测 MIME 类型（用于非文本直接返回）
     media_type = mimetypes.guess_type(file_path)[0] or "text/plain"
+    # 2) 猜测编码并解码为字符串
     encoding = chardet.detect(raw_data)["encoding"] or "utf-8"
 
     try:
@@ -29,6 +38,7 @@ def preview_file(file_path, file_ext, raw_data) -> Tuple[BytesIO, str]:
         except UnicodeDecodeError:
             content = raw_data.decode(encoding, errors="ignore")
 
+    # 3) 按扩展名选择预览处理器
     preview_handlers = {
         "html": lambda: sanitize_html(content),
         "md": lambda: create_html_preview(
@@ -69,7 +79,9 @@ def preview_file(file_path, file_ext, raw_data) -> Tuple[BytesIO, str]:
     }
 
     if file_ext in preview_handlers:
+        # 4) 有处理器则转成 HTML
         html_content_bytes = preview_handlers[file_ext]().encode("utf-8")
         return BytesIO(html_content_bytes), "text/html"
 
+    # 5) 未知类型直接返回原始字节与 MIME
     return BytesIO(raw_data), media_type

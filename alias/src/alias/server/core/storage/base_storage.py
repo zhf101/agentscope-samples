@@ -1,16 +1,25 @@
 # -*- coding: utf-8 -*-
+"""
+存储接口抽象（中文教学注释版）。
+
+定义所有存储实现必须提供的方法（本地/OSS/沙盒）。
+参考 docs/core_storage_base_storage_py_total_beginner_walkthrough.md。
+"""
+
 from abc import ABC, abstractmethod
 from enum import Enum
 from typing import List
 
 
 class StorageType(str, Enum):
+    # 可选存储类型
     LOCAL = "local"
     OSS = "oss"
     SANDBOX = "sandbox"
 
 
 class BaseStorage(ABC):
+    # 子类需要设置具体类型
     type: StorageType = None
 
     @abstractmethod
@@ -19,6 +28,7 @@ class BaseStorage(ABC):
 
     @property
     def storage_type(self) -> StorageType:
+        # 对外暴露类型
         return self.type
 
     @abstractmethod
@@ -50,6 +60,7 @@ class BaseStorage(ABC):
         pass
 
     def create_directory(self, directory: str) -> str:
+        # 默认实现：直接返回目录字符串（子类可重写为真实创建）
         return directory
 
     @abstractmethod

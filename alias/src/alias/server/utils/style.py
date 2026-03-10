@@ -8,6 +8,10 @@ HTML/Markdown 渲染样式工具（新手教学注释版）。
 1) 提供通用 CSS
 2) 用 Pygments 做代码高亮
 3) 把 markdown/csv 转成 HTML 预览片段
+
+补充（参考 docs/utils_style_py_total_beginner_walkthrough.md）：
+- sanitize_html 目前只是占位，未真正防 XSS；
+- 适合做文件预览/内容展示的渲染工具。
 """
 
 import pygments
@@ -216,6 +220,7 @@ def create_html_preview(title, content, extra_css=""):
     :param extra_css: Additional CSS styles.
     :return: Complete HTML string.
     """
+    # 拼接完整 HTML 页面（头部含 CSS，body 含内容）
     return f"""
     <html>
     <head>

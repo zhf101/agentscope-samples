@@ -6,6 +6,11 @@ Alembic 迁移管理器（新手教学注释版）
 1) 创建迁移脚本
 2) 升级/降级数据库版本
 3) 查询当前 revision 与历史 revision
+
+补充（参考 docs/core_database_migration_manager_py_total_beginner_walkthrough.md）：
+- _clean_message 负责把迁移描述变成合法文件名；
+- upgrade/downgrade 包装 Alembic 命令；
+- get_all_revisions 返回历史迁移列表。
 """
 
 from datetime import datetime
@@ -38,6 +43,7 @@ class MigrationManager:
 
     def _convert_db_uri(self, uri: str) -> str:
         """Convert database URI to async version"""
+        # 同步 URI -> 异步驱动 URI
         if uri.startswith("postgresql://"):
             return uri.replace("postgresql://", "postgresql+asyncpg://")
         elif uri.startswith("sqlite://"):
@@ -72,6 +78,7 @@ class MigrationManager:
 
     async def create(self, message: str, autogenerate: bool = True) -> bool:
         try:
+            # 清洗 message，避免生成非法文件名
             clean_message = self._clean_message(message)
             command.revision(
                 self.alembic_cfg,
@@ -136,6 +143,7 @@ class MigrationManager:
 
     def _get_revision_date(self, file_path: str) -> datetime:
         try:
+            # 迁移文件名格式：YYYYMMDDHHMMSS_xxx.py
             match = re.match(r"(\d{14})_.+\.py", Path(file_path).name)
             if match:
                 date_str = match.group(1)

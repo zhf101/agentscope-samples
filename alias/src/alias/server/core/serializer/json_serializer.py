@@ -1,5 +1,10 @@
 # -*- coding: utf-8 -*-
-"""JSON 序列化器实现（新手教学注释版）。"""
+"""JSON 序列化器实现（新手教学注释版）。
+
+补充（参考 docs/core_serializer_json_serializer_py_total_beginner_walkthrough.md）：
+- serialize 按顺序处理 None / model_dump_json / model_dump / json.dumps；
+- deserialize 先 json.loads，再按需转成模型对象。
+"""
 
 import json
 from typing import Any, Optional, Type, TypeVar
