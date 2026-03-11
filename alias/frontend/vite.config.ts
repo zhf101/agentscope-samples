@@ -25,6 +25,7 @@ export default defineConfig(({ mode }) => {
     define: {
       __VERSION__: versionDefine,
     },
+    assetsInclude: ["**/*.csv"],
     css: {
       modules: {
         localsConvention: "camelCase",

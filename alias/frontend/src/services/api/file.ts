@@ -22,9 +22,10 @@ fileInstance.interceptors.request.use((config) => {
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
   }
-  config.headers = attachSimpleAuthHeader(
+  const headers = attachSimpleAuthHeader(
     (config.headers || {}) as Record<string, any>,
   );
+  Object.assign(config.headers, headers);
   return config;
 });
 

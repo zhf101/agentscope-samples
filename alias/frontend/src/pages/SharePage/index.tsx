@@ -341,18 +341,10 @@ const SharePage: React.FC = () => {
           </div>
           <div className={styles.tabContent}>
             {activeTab === "workspace" ? (
-              <Workspace
-                conversationId={sessionId || ""}
-                currentStep={currentStep}
-                totalSteps={totalSteps}
-                onNextStep={onNextStep}
-                onPrevStep={onPrevStep}
-                todoList={null}
-                hideHeader={true}
-              />
+              <Workspace />
             ) : (
               <Roadmap
-                data={roadmapData || undefined}
+                data={roadmapData as any}
                 editable={false}
                 conversationId={sessionId || ""}
               />

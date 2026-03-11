@@ -1,22 +1,16 @@
 import Chat from "@/pages/Chat";
 import Login from "@/pages/Login";
 import SharePage from "@/pages/SharePage";
-import { ErrorBoundary } from "react-error-boundary";
+import { ErrorBoundary, FallbackProps } from "react-error-boundary";
 import { useI18n } from "@/context/LanguageContext";
 import { createBrowserRouter } from "react-router-dom";
 
-const ErrorFallback = ({
-  error,
-  resetErrorBoundary,
-}: {
-  error: Error;
-  resetErrorBoundary: () => void;
-}) => {
+const ErrorFallback = ({ error, resetErrorBoundary }: FallbackProps) => {
   const { t } = useI18n();
   return (
     <div style={{ padding: "20px", textAlign: "center" }}>
       <h2>{t("app.errorFallback.title")}</h2>
-      <p style={{ color: "red" }}>{error.message}</p>
+      <p style={{ color: "red" }}>{(error as Error).message}</p>
       <button
         onClick={resetErrorBoundary}
         style={{

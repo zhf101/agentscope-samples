@@ -11,7 +11,8 @@ import {
 } from "@agentscope-ai/chat";
 import { IconButton, message } from "@agentscope-ai/design";
 import { SparkAttachmentLine } from "@agentscope-ai/icons";
-import { GetProp, Upload } from "antd";
+import { GetProp, Upload, UploadProps } from "antd";
+type UploadRequestOption = Parameters<NonNullable<UploadProps["customRequest"]>>[0];
 import React, { memo, useMemo } from "react";
 import styles from "./index.module.scss";
 
@@ -75,13 +76,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
       },
     ];
   }, [chatMode, t]);
-  const handleCustomRequest = async (options: {
-    file: File;
-    onSuccess: Function;
-    onError: Function;
-    onProgress: Function;
-  }) => {
+  const handleCustomRequest = async (options: UploadRequestOption) => {
     const { file, onSuccess, onError, onProgress } = options;
+    const uploadFile = file as File;
     try {
       // Merge file names from server file list and local preview list
       let existingFiles: string[] = [];
@@ -90,7 +87,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         const response: any = await conversationApi.getFiles(conversationId);
         if (!response.status || !response.payload) {
           message.error(t("chat.fetchFileListFailed"));
-          onError(new Error(t("chat.fetchFileListFailed")));
+          onError?.(new Error(t("chat.fetchFileListFailed")));
           return;
         }
         existingFiles = [
@@ -101,45 +98,45 @@ const ChatInput: React.FC<ChatInputProps> = ({
         ];
       }
       // Check file size
-      if (file.size > MAX_FILE_SIZE) {
-        message.error(t("chat.fileTooLarge", { name: file.name }));
-        onError(
-          new Error(t("chat.fileTooLarge", { name: file.name })),
+      if (uploadFile.size > MAX_FILE_SIZE) {
+        message.error(t("chat.fileTooLarge", { name: uploadFile.name }));
+        onError?.(
+          new Error(t("chat.fileTooLarge", { name: uploadFile.name })),
         );
         return;
       }
 
       // Check if this file already exists locally (including files being uploaded)
-      const isUploading = attachedFiles.some((fp) => fp.name === file.name);
+      const isUploading = attachedFiles.some((fp) => fp.name === uploadFile.name);
       if (isUploading) {
-        message.error(t("chat.fileUploading", { name: file.name }));
-        onError(
-          new Error(t("chat.fileUploading", { name: file.name })),
+        message.error(t("chat.fileUploading", { name: uploadFile.name }));
+        onError?.(
+          new Error(t("chat.fileUploading", { name: uploadFile.name })),
         );
         return;
       }
 
       // Get unique file name
-      const uniqueFileName = getUniqueFileName(existingFiles, file.name);
+      const uniqueFileName = getUniqueFileName(existingFiles, uploadFile.name);
       // Create new File object if file name has changed
       const renamedFile =
-        uniqueFileName !== file.name
-          ? new File([file], uniqueFileName, { type: file.type })
-          : file;
+        uniqueFileName !== uploadFile.name
+          ? new File([uploadFile], uniqueFileName, { type: uploadFile.type })
+          : uploadFile;
 
       // Add new file preview
       const newAttachedFiles: AttachmentItem = {
-        uid: `temp-${Date.now()}-${file.name}`,
+        uid: `temp-${Date.now()}-${uploadFile.name}`,
         name: uniqueFileName,
-        type: file.type,
-        size: file.size,
+        type: uploadFile.type,
+        size: uploadFile.size,
         status: "uploading",
       };
 
       const newFilePreview: FilePreview = {
         name: uniqueFileName,
-        type: file.type,
-        size: formatFileSize(file.size || 0),
+        type: uploadFile.type,
+        size: formatFileSize(uploadFile.size || 0),
         id: "",
         status: "uploading",
         progress: 0,
@@ -161,7 +158,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
           ),
         );
 
-        onProgress({ percent: progress });
+        onProgress?.({ percent: progress });
       };
 
       // Execute upload
@@ -200,7 +197,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         message.success(
           t("chat.fileUploadSuccess", { name: uniqueFileName }),
         );
-        onSuccess(uploadResponse.payload, file);
+        onSuccess?.(uploadResponse.payload, uploadFile);
       } else {
         // Update status to error
         setAttachedFiles((prev) =>
@@ -228,15 +225,15 @@ const ChatInput: React.FC<ChatInputProps> = ({
         message.error(
           t("chat.fileUploadFailed", { name: uniqueFileName }),
         );
-        onError(new Error(t("chat.uploadFailed")));
+        onError?.(new Error(t("chat.uploadFailed")));
       }
     } catch (error: any) {
       // Get file name (may have been renamed)
-      const fileName = file.name;
+      const fileName = uploadFile.name;
       message.error(
         t("chat.fileUploadFailedRetry", { name: fileName }),
       );
-      onError(error);
+      onError?.(error);
     }
   };
   const handleDeleteFileChange: GetProp<

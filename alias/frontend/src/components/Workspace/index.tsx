@@ -300,7 +300,7 @@ const Workspace = () => {
       }, 100);
     }
   };
-  const renderLabel = (d: ToolCallMessage | Message) => {
+  const renderLabel = (d: ToolCallMessage) => {
     let prefixName = `${t("workspace.output")} · `;
     if (d?.type === MessageType.TOOL_USE)
       prefixName = `${t("workspace.toolInput")} · `;
@@ -361,7 +361,7 @@ const Workspace = () => {
               notFoundContent={null}
               options={(messageList || []).map((d: Message) => ({
                 value: d.id,
-                label: renderLabel(d),
+                label: renderLabel(d as ToolCallMessage),
                 // disabled: displayedContent === null
               }))}
               labelRender={labelRender}
