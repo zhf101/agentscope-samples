@@ -177,6 +177,7 @@ from alias.agent.agents.common_agent_utils import (
     save_post_reasoning_state,           # 推理后保存状态
     save_post_action_state,              # 行动后保存状态
 )
+from alias.agent.utils import send_as_msg
 
 # 导入浏览器辅助功能
 from alias.agent.agents._build_in_helper_browser._file_download import (
@@ -319,6 +320,107 @@ class EmptyModel(BaseModel):
 # ==============================================================================
 # 钩子函数（Hook Functions）
 # ==============================================================================
+def _extract_first_text(content: Any) -> str:
+    """Extract the first meaningful text from a content payload."""
+    if content is None:
+        return ""
+    if isinstance(content, str):
+        return content
+    if isinstance(content, dict):
+        for key in ("text", "content", "output", "reasoning"):
+            if key in content:
+                return str(content[key])
+        try:
+            return json.dumps(content, ensure_ascii=False)
+        except Exception:
+            return str(content)
+    if isinstance(content, list):
+        for item in content:
+            if isinstance(item, str):
+                return item
+            if isinstance(item, dict):
+                for key in ("text", "content", "output", "reasoning"):
+                    if key in item:
+                        return str(item[key])
+        if content:
+            return str(content[0])
+        return ""
+    return str(content)
+
+
+def _should_log_llm_payloads() -> bool:
+    return os.getenv("LOG_LLM_PAYLOADS", "false").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+        "on",
+    }
+
+
+def _truncate_text(text: str, limit: int = 4000) -> str:
+    if len(text) <= limit:
+        return text
+    return text[:limit] + f"...(已截断 {len(text) - limit} 字符)"
+
+
+def _redact_obj(obj: Any) -> Any:
+    sensitive_keys = (
+        "authorization",
+        "api_key",
+        "apikey",
+        "token",
+        "secret",
+        "password",
+        "bearer",
+    )
+    if isinstance(obj, dict):
+        cleaned = {}
+        for k, v in obj.items():
+            if any(key in str(k).lower() for key in sensitive_keys):
+                cleaned[k] = "***"
+            else:
+                cleaned[k] = _redact_obj(v)
+        return cleaned
+    if isinstance(obj, list):
+        return [_redact_obj(v) for v in obj]
+    if isinstance(obj, str):
+        return _truncate_text(obj)
+    return obj
+
+
+def _log_llm_payloads(
+    stage: str,
+    request_payload: dict | None = None,
+    response_payload: dict | None = None,
+) -> None:
+    if not _should_log_llm_payloads():
+        return
+    try:
+        if request_payload is not None:
+            logger.info(
+                f"【LLM请求报文】【{stage}】"
+                f"{json.dumps(_redact_obj(request_payload), ensure_ascii=False)}",
+            )
+        if response_payload is not None:
+            logger.info(
+                f"【LLM响应报文】【{stage}】"
+                f"{json.dumps(_redact_obj(response_payload), ensure_ascii=False)}",
+            )
+    except Exception as exc:
+        logger.warning(f"LLM 报文日志输出失败: {exc}")
+
+
+def _should_log_planning() -> bool:
+    return os.getenv("LOG_PLANNING_STEPS", "true").strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+        "on",
+    }
+
+
 """
 【什么是钩子（Hook）？】
 钩子是在特定时机自动执行的函数，就像"事件监听器"。
@@ -644,6 +746,8 @@ class BrowserAgent(AliasAgentBase):
         self.current_subtask_idx = 0
         # 当前正在处理的子任务
         self.current_subtask = None
+        # 是否已经向会话写入过 roadmap
+        self._roadmap_emitted = False
 
         # ==================== 迭代控制 ====================
         # 当前迭代次数
@@ -1189,6 +1293,12 @@ class BrowserAgent(AliasAgentBase):
             ),
             role="user",
         )
+        if _should_log_planning():
+            logger.info(
+                "【规划】进入推理阶段"
+                f" | 当前子任务: {self.current_subtask}"
+                f" | 迭代: {self.iter_n}",
+            )
 
         # ==================== 格式化消息 ====================
         """
@@ -1220,6 +1330,14 @@ class BrowserAgent(AliasAgentBase):
         # - prompt：格式化后的提示
         # - tools：可用工具列表（不含截图工具）
         # - tool_choice：工具选择策略
+        _log_llm_payloads(
+            "纯推理",
+            request_payload={
+                "prompt": prompt,
+                "tools": self.no_screenshot_tool_list,
+                "tool_choice": tool_choice,
+            },
+        )
         res = await self.model(
             prompt,
             tools=self.no_screenshot_tool_list,
@@ -1244,10 +1362,18 @@ class BrowserAgent(AliasAgentBase):
                 # 逐块获取输出内容
                 async for content_chunk in res:
                     msg.content = content_chunk.content
+                _log_llm_payloads(
+                    "纯推理",
+                    response_payload={"content": msg.content},
+                )
                 await self.print(msg)  # 打印给用户
             else:
                 # 非流式输出处理
                 msg = Msg(self.name, list(res.content), "assistant")
+                _log_llm_payloads(
+                    "纯推理",
+                    response_payload={"content": msg.content},
+                )
                 await self.print(msg)
             return msg
 
@@ -1362,6 +1488,13 @@ class BrowserAgent(AliasAgentBase):
             )
 
             # 调用 LLM 进行推理
+            _log_llm_payloads(
+                f"观察推理-块{self.snapshot_chunk_id + 1}",
+                request_payload={
+                    "prompt": prompt,
+                    "tools": self.no_screenshot_tool_list,
+                },
+            )
             res = await self.model(
                 prompt,
                 tools=self.no_screenshot_tool_list,
@@ -1382,6 +1515,10 @@ class BrowserAgent(AliasAgentBase):
 
                 # 记录日志
                 logger.info(msg.content)
+                _log_llm_payloads(
+                    f"观察推理-块{self.snapshot_chunk_id + 1}",
+                    response_payload={"content": msg.content},
+                )
 
             except asyncio.CancelledError as e:
                 interrupted_by_user = True
@@ -1560,6 +1697,11 @@ class BrowserAgent(AliasAgentBase):
         """
         if isinstance(original_task, list):
             original_task = original_task[0]
+        original_text = (
+            original_task.get_text_content()
+            if isinstance(original_task, Msg)
+            else str(original_task)
+        )
 
         prompt = await self.formatter.format(
             msgs=[
@@ -1574,20 +1716,49 @@ class BrowserAgent(AliasAgentBase):
                 ),
             ],
         )
+        _log_llm_payloads(
+            "任务拆分",
+            request_payload={"prompt": prompt},
+        )
         res = await self.model(prompt)
         decompose_text = ""
         print_msg = Msg(name=self.name, content=[], role="assistant")
         if self.model.stream:
             async for content_chunk in res:
-                decompose_text = content_chunk.content[0]["text"]
+                decompose_text = _extract_first_text(content_chunk.content)
                 print_msg.content = content_chunk.content
                 # await self.print(print_msg, False)
         else:
-            decompose_text = res.content[0]["text"]
+            decompose_text = _extract_first_text(res.content)
         print_msg.content = [TextBlock(type="text", text=decompose_text)]
 
         # await self.print(print_msg, True)
         logger.info(decompose_text)
+        _log_llm_payloads(
+            "任务拆分",
+            response_payload={"content": print_msg.content},
+        )
+        if _should_log_planning():
+            logger.info(f"【规划】任务拆分初稿: {decompose_text}")
+
+        def _normalize_subtasks(raw_tasks: list) -> list[str]:
+            cleaned: list[str] = []
+            for item in raw_tasks:
+                text = str(item).strip()
+                if text:
+                    cleaned.append(text)
+            return cleaned
+
+        initial_subtasks: list[str] = []
+        try:
+            if "```json" in decompose_text:
+                decompose_text = decompose_text.replace("```json", "")
+                decompose_text = decompose_text.replace("```", "")
+            parsed_initial = json.loads(decompose_text)
+            if isinstance(parsed_initial, list):
+                initial_subtasks = _normalize_subtasks(parsed_initial)
+        except Exception:
+            initial_subtasks = []
 
         # Use path relative to this file for robustness
         reflection_prompt_path = os.path.join(
@@ -1623,36 +1794,71 @@ class BrowserAgent(AliasAgentBase):
                 ),
             ],
         )
+        _log_llm_payloads(
+            "任务拆分-反思",
+            request_payload={"prompt": reflection_prompt},
+        )
         reflection_res = await self.model(reflection_prompt)
         reflection_text = ""
         print_msg = Msg(name=self.name, content=[], role="assistant")
         if self.model.stream:
             async for content_chunk in reflection_res:
-                reflection_text = content_chunk.content[0]["text"]
+                reflection_text = _extract_first_text(content_chunk.content)
                 print_msg.content = content_chunk.content
                 # await self.print(print_msg, last=False)
         else:
-            reflection_text = reflection_res.content[0]["text"]
+            reflection_text = _extract_first_text(reflection_res.content)
         print_msg.content = [TextBlock(type="text", text=reflection_text)]
         # await self.print(print_msg, last=True)
         logger.info(reflection_text)
+        _log_llm_payloads(
+            "任务拆分-反思",
+            response_payload={"content": print_msg.content},
+        )
+        if _should_log_planning():
+            logger.info(f"【规划】任务拆分反思后结果: {reflection_text}")
 
-        subtasks = []
+        subtasks: list[str] = []
+        revised_decomposition = None
         try:
             if "```json" in reflection_text:
                 reflection_text = reflection_text.replace("```json", "")
                 reflection_text = reflection_text.replace("```", "")
             subtasks_json = json.loads(reflection_text)
+            revised_decomposition = subtasks_json.get("DECOMPOSITION", None)
             subtasks = subtasks_json.get("REVISED_SUBTASKS", [])
             if not isinstance(subtasks, list):
                 subtasks = []
         except Exception:
-            subtasks = [original_task.content]
+            subtasks = [original_text]
+
+        subtasks = _normalize_subtasks(subtasks)
+        if initial_subtasks:
+            if (
+                not subtasks
+                or (
+                    len(subtasks) == 1
+                    and subtasks[0] == original_text
+                    and len(initial_subtasks) > 1
+                )
+                or (revised_decomposition is False and len(initial_subtasks) > 1)
+            ):
+                subtasks = initial_subtasks
 
         self.subtasks = subtasks
         self.current_subtask_idx = 0
         self.current_subtask = self.subtasks[0] if self.subtasks else None
-        self.original_task = original_task.get_text_content()
+        self.original_task = original_text
+
+        if _should_log_planning():
+            logger.info(f"【规划】原始任务: {self.original_task}")
+            logger.info(
+                "【规划】子任务列表("
+                f"{len(self.subtasks)}): {json.dumps(self.subtasks, ensure_ascii=False)}",
+            )
+            logger.info(f"【规划】当前子任务: {self.current_subtask}")
+
+        await self._emit_browser_roadmap()
 
         formatted_task = "The original task is: " + self.original_task + "\n"
         try:
@@ -1673,6 +1879,31 @@ class BrowserAgent(AliasAgentBase):
         )
         logger.info(f"The formatted task is: \n{formatted_task.content}")
         return formatted_task
+
+    async def _emit_browser_roadmap(self) -> None:
+        """将浏览器模式的任务拆分写入 Roadmap（Plan）。"""
+        if self._roadmap_emitted:
+            return
+        if not getattr(self, "session_service", None):
+            return
+        if not self.subtasks:
+            return
+        subtasks_payload = [
+            {"description": str(task), "state": "todo"}
+            for task in self.subtasks
+        ]
+        try:
+            await self.session_service.create_plan(
+                content={"subtasks": subtasks_payload},
+            )
+            self._roadmap_emitted = True
+            if _should_log_planning():
+                logger.info(
+                    "【规划】已写入 browser_use Roadmap: "
+                    f"{json.dumps(subtasks_payload, ensure_ascii=False)}",
+                )
+        except Exception as exc:
+            logger.warning(f"浏览器 Roadmap 写入失败: {exc}")
 
     async def _navigate_to_start_url(self) -> None:
         """
@@ -1696,7 +1927,7 @@ class BrowserAgent(AliasAgentBase):
         response = await self.toolkit.call_tool_function(tool_call)
         response_text = ""
         async for chunk in response:
-            response_text = chunk.content[0]["text"]
+            response_text = _extract_first_text(chunk.content)
 
         tab_numbers = re.findall(r"- (\d+):", response_text)
         # Close all tabs except the first one
@@ -1746,7 +1977,7 @@ class BrowserAgent(AliasAgentBase):
         )
         snapshot_str = ""
         async for chunk in snapshot_response:
-            snapshot_str = chunk.content[0]["text"]
+            snapshot_str = _extract_first_text(chunk.content)
         snapshot_in_chunk = self._split_snapshot_by_chunk(
             snapshot_str,
         )
@@ -1803,6 +2034,10 @@ class BrowserAgent(AliasAgentBase):
         )
 
         # Call the model to generate the summary
+        _log_llm_payloads(
+            "记忆总结",
+            request_payload={"prompt": prompt},
+        )
         res = await self.model(prompt)
 
         # Handle response
@@ -1810,13 +2045,17 @@ class BrowserAgent(AliasAgentBase):
         print_msg = Msg(name=self.name, content=[], role="assistant")
         if self.model.stream:
             async for content_chunk in res:
-                summary_text = content_chunk.content[0]["text"]
+                summary_text = _extract_first_text(content_chunk.content)
                 print_msg.content = content_chunk.content
                 await self.print(print_msg, last=False)
         else:
-            summary_text = res.content[0]["text"]
+            summary_text = _extract_first_text(res.content)
         print_msg.content = [TextBlock(type="text", text=summary_text)]
         await self.print(print_msg, last=True)
+        _log_llm_payloads(
+            "记忆总结",
+            response_payload={"content": print_msg.content},
+        )
 
         # Update the memory with the summarized content
         summarized_memory = []
@@ -2007,6 +2246,14 @@ class BrowserAgent(AliasAgentBase):
                 ],
             )
 
+        if _should_log_planning():
+            logger.info(
+                "【规划】子任务检查"
+                f" | 当前索引: {self.current_subtask_idx + 1}"
+                f"/{len(self.subtasks)}"
+                f" | 当前子任务: {self.current_subtask}",
+            )
+
         # 获取记忆内容作为上下文
         memory_content = await self.memory.get_memory()
 
@@ -2051,20 +2298,28 @@ class BrowserAgent(AliasAgentBase):
         )
 
         # 调用 LLM 进行判断
+        _log_llm_payloads(
+            "子任务校验",
+            request_payload={"prompt": prompt},
+        )
         response = await self.model(prompt)
         response_text = ""
         print_msg = Msg(name=self.name, content=[], role="assistant")
 
         if self.model.stream:
             async for chunk in response:
-                response_text = chunk.content[0]["text"]
+                response_text = _extract_first_text(chunk.content)
                 print_msg.content = chunk.content
                 await self.print(print_msg, last=False)
         else:
-            response_text = response.content[0]["text"]
+            response_text = _extract_first_text(response.content)
 
         print_msg.content = [TextBlock(type="text", text=response_text)]
         await self.print(print_msg, last=True)
+        _log_llm_payloads(
+            "子任务校验",
+            response_payload={"content": print_msg.content},
+        )
 
         # ==================== 处理判断结果 ====================
         # .strip() 移除首尾空白，.upper() 转大写
@@ -2081,6 +2336,12 @@ class BrowserAgent(AliasAgentBase):
             else:
                 # 所有子任务都完成了
                 self.current_subtask = None
+
+            if _should_log_planning():
+                logger.info(
+                    "【规划】子任务已完成，切换到下一个"
+                    f" | 新子任务: {self.current_subtask}",
+                )
 
             return ToolResponse(
                 content=[
@@ -2127,12 +2388,20 @@ class BrowserAgent(AliasAgentBase):
                 ],
             )
 
+            _log_llm_payloads(
+                "子任务修订",
+                request_payload={"prompt": prompt},
+            )
             response = await self.model(prompt)
             if self.model.stream:
                 async for chunk in response:
-                    revise_text = chunk.content[0]["text"]
+                    revise_text = _extract_first_text(chunk.content)
             else:
-                revise_text = response.content[0]["text"]
+                revise_text = _extract_first_text(response.content)
+            _log_llm_payloads(
+                "子任务修订",
+                response_payload={"content": revise_text},
+            )
 
             # 尝试解析修订结果
             try:
@@ -2154,6 +2423,12 @@ class BrowserAgent(AliasAgentBase):
                         logger.info(
                             f"Subtasks revised: {self.subtasks}, reason: {revise_json.get('REASON', '')}",
                         )
+                        if _should_log_planning():
+                            logger.info(
+                                "【规划】子任务已修订"
+                                f" | 原因: {revise_json.get('REASON', '')}"
+                                f" | 新子任务: {json.dumps(self.subtasks, ensure_ascii=False)}",
+                            )
             except Exception as e:
                 logger.warning(f"Failed to revise subtasks: {e}")
 
@@ -2222,24 +2497,23 @@ class BrowserAgent(AliasAgentBase):
         )
 
         try:
-            res = await self.model(prompt)
-            res_msg = Msg(
-                "assistant",
-                [],
-                "assistant",
+            _log_llm_payloads(
+                "最终总结",
+                request_payload={"prompt": prompt},
             )
-
+            res = await self.model(prompt)
             if self.model.stream:
                 summary_text = ""
                 async for content_chunk in res:
-                    res_msg.content = content_chunk.content
-                    summary_text = content_chunk.content[0]["text"]
-                    await self.print(res_msg, False)
-                await self.print(res_msg, True)
+                    summary_text = _extract_first_text(content_chunk.content)
             else:
-                summary_text = res.content[0]["text"]
-                res_msg.content = summary_text
-                await self.print(res_msg, True)
+                summary_text = _extract_first_text(res.content)
+            if not summary_text:
+                summary_text = ""
+            _log_llm_payloads(
+                "最终总结",
+                response_payload={"content": summary_text},
+            )
 
             # 验证任务是否真正完成
             finish_status = await self._validate_finish_status(summary_text)
@@ -2247,6 +2521,14 @@ class BrowserAgent(AliasAgentBase):
 
             # 检查是否真正完成任务
             if "BROWSER_AGENT_TASK_FINISHED" in finish_status:
+                if getattr(self, "session_service", None):
+                    # 额外发送一条 Response，确保前端能看到最终结果
+                    await send_as_msg(
+                        self.session_service,
+                        summary_text,
+                        name=self.name,
+                        last=True,
+                    )
                 # 创建结构化响应
                 structure_response = WorkerResponse(
                     task_done=True,
@@ -2328,11 +2610,19 @@ class BrowserAgent(AliasAgentBase):
                 ),
             ],
         )
+        _log_llm_payloads(
+            "完成度校验",
+            request_payload={"prompt": prompt},
+        )
         res = await self.model(prompt)
         response_text = ""
         if self.model.stream:
             async for content_chunk in res:
-                response_text = content_chunk.content[0]["text"]
+                response_text = _extract_first_text(content_chunk.content)
         else:
-            response_text = res.content[0]["text"]
+            response_text = _extract_first_text(res.content)
+        _log_llm_payloads(
+            "完成度校验",
+            response_payload={"content": response_text},
+        )
         return response_text

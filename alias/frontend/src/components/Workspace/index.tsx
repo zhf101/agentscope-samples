@@ -9,6 +9,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark, prism } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { UniversalViewer } from "../Viewer";
 import styles from "./index.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 
 const Workspace = () => {
   const {
@@ -18,6 +19,7 @@ const Workspace = () => {
     setDisplayedContent,
   } = useWorkspace();
   const { theme } = useTheme();
+  const { t } = useI18n();
   const [serialNum, setSerialNum] = useState<number>(0);
   const [useToolInfo, setUseToolInfo] = useState<{
     name: string;
@@ -97,18 +99,18 @@ const Workspace = () => {
         displayedContentObj.length > 0
       ) {
         if (displayedContentObj[0].type === MessageType.TOOL_USE)
-          return "Raw data";
+          return t("workspace.rawData");
         if (displayedContentObj[0].type === MessageType.TOOL_RESULT)
-          return "Tool result";
+          return t("workspace.toolResult");
       }
       if (displayedContentObj.hasOwnProperty("type")) {
         if (displayedContentObj.type === MessageType.TOOL_USE)
-          return "Raw data";
+          return t("workspace.rawData");
         if (displayedContentObj.type === MessageType.TOOL_RESULT)
-          return "Tool result";
+          return t("workspace.toolResult");
       }
     }
-    return "Raw result";
+    return t("workspace.rawResult");
   };
   // Create an array that refreshes each time displayedContent changes
   const items: CollapseProps["items"] = useMemo(() => {
@@ -163,7 +165,7 @@ const Workspace = () => {
             case "edit_file":
               base.unshift({
                 key: "output-0",
-                label: `Output of 🛠️ ${name}`,
+                label: `${t("workspace.output")} · 🛠️ ${name}`,
                 children: (
                   <UniversalViewer
                     content={output[0].text}
@@ -176,7 +178,7 @@ const Workspace = () => {
             case "read_file":
               base.unshift({
                 key: "output-0",
-                label: `Output of 🛠️ ${name}`,
+                label: `${t("workspace.output")} · 🛠️ ${name}`,
                 children: (
                   <UniversalViewer
                     content={output[0].text}
@@ -190,7 +192,7 @@ const Workspace = () => {
             case "write_file":
               base.unshift({
                 key: "output-0",
-                label: `Output of 🛠️ ${name}`,
+                label: `${t("workspace.output")} · 🛠️ ${name}`,
                 children: (
                   <UniversalViewer
                     content={args?.content || output[0].text}
@@ -203,7 +205,7 @@ const Workspace = () => {
             case "generate_chart":
               base.unshift({
                 key: "output-0",
-                label: `Output of 🛠️ ${name}`,
+                label: `${t("workspace.output")} · 🛠️ ${name}`,
                 children: (
                   <UniversalViewer
                     content={output[0].text}
@@ -224,13 +226,13 @@ const Workspace = () => {
                       // Insert at second position
                       base.splice(1, 0, {
                         key: `output-${index}`,
-                        label: `Output of 🛠️ ${name}`,
+                        label: `${t("workspace.output")} · 🛠️ ${name}`,
                         children: renderMarkdown(item.text),
                       });
                     } else {
                       base.unshift({
                         key: `output-${index}`,
-                        label: `Output of 🛠️ ${name}`,
+                        label: `${t("workspace.output")} · 🛠️ ${name}`,
                         children: renderMarkdown(item.text),
                       });
                     }
@@ -238,11 +240,11 @@ const Workspace = () => {
                   case "image":
                     base.unshift({
                       key: `image-${index}`,
-                      label: "Image",
+                      label: t("workspace.image"),
                       children: (
                         <img
                           src={"data:image/jpeg;base64," + item.data}
-                          alt="Image"
+                          alt={t("workspace.image")}
                           style={{
                             maxWidth: "100%",
                             maxHeight: 500,
@@ -265,7 +267,7 @@ const Workspace = () => {
       ) {
         base.unshift({
           key: "input",
-          label: `Arguments of 🛠️ ${useToolInfo.name}`,
+          label: `${t("workspace.arguments")} · 🛠️ ${useToolInfo.name}`,
           children: renderMarkdown(useToolInfo.arguments),
         });
       }
@@ -299,13 +301,16 @@ const Workspace = () => {
     }
   };
   const renderLabel = (d: ToolCallMessage | Message) => {
-    let prefixName = `Output of `;
-    if (d?.type === MessageType.TOOL_USE) prefixName = `Using tool input of `;
+    let prefixName = `${t("workspace.output")} · `;
+    if (d?.type === MessageType.TOOL_USE)
+      prefixName = `${t("workspace.toolInput")} · `;
     if (d?.type === MessageType.TOOL_RESULT)
-      prefixName = `Tool result output of `;
+      prefixName = `${t("workspace.toolResultOutput")} · `;
     return (
       <div className={styles.renderLabel}>
-        <span> {`${prefixName}🛠️ ${d?.tool_name ?? "Unknown Tool"}`}</span>
+        <span>
+          {`${prefixName}🛠️ ${d?.tool_name ?? t("workspace.unknownTool")}`}
+        </span>
         <span className={styles.labelId}>{d.id}</span>
       </div>
     );
@@ -315,21 +320,24 @@ const Workspace = () => {
     // Find corresponding message based on value (id)
     const message = messageList.find((msg: Message) => msg.id === value);
     if (!message) {
-      return <span>No option match</span>;
+      return <span>{t("workspace.noOptionMatch")}</span>;
     }
     const d = message as ToolCallMessage;
-    let prefixName = `Output of `;
-    if (d?.type === MessageType.TOOL_USE) prefixName = `Using tool input of `;
+    let prefixName = `${t("workspace.output")} · `;
+    if (d?.type === MessageType.TOOL_USE)
+      prefixName = `${t("workspace.toolInput")} · `;
     if (d?.type === MessageType.TOOL_RESULT)
-      prefixName = `Tool result output of `;
-    return <span>{`${prefixName}🛠️ ${d?.tool_name ?? "Unknown Tool"}`}</span>;
+      prefixName = `${t("workspace.toolResultOutput")} · `;
+    return (
+      <span>{`${prefixName}🛠️ ${d?.tool_name ?? t("workspace.unknownTool")}`}</span>
+    );
   };
   return (
     <div className={styles.workWrap}>
       <div className={styles.workspaceHeader}>
         <div className={styles.titleContainer}>
           <SparkComputerLine className={styles.computerIcon} />
-          <h2 className={styles.title}>Agent Workspace</h2>
+          <h2 className={styles.title}>{t("workspace.title")}</h2>
         </div>
       </div>
       {displayedContent && (

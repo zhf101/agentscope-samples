@@ -30,6 +30,7 @@ import styles from "./index.module.scss";
 import "./index.scss";
 import { PanelHeader } from "./PanelHeader";
 import { FileTree } from "./Tree";
+import { useI18n } from "@/context/LanguageContext";
 const DEFAULT_TERMINAL_SIZE = 25;
 const DEFAULT_EDITOR_SIZE = 100 - DEFAULT_TERMINAL_SIZE;
 // const { DirectoryTree } = Tree;
@@ -72,6 +73,7 @@ const Artifacts = (Props: {
   const [commandOutput, setCommandOutput] = useState("");
   const lastCommandRef = useRef("");
   const { theme } = useTheme();
+  const { t } = useI18n();
 
   // Move handleOutput function to component top
   const handleOutput = (data: string) => {
@@ -374,7 +376,9 @@ const Artifacts = (Props: {
             [styles.saved]: saveStatus === "saved",
           })}
         >
-          {saveStatus === "modified" ? "• Modified • Ctrl + S" : "• Saved"}
+          {saveStatus === "modified"
+            ? t("artifacts.statusModified", { shortcut: "Ctrl + S" })
+            : t("artifacts.statusSaved")}
         </span>
       )}
     </div>
@@ -458,7 +462,7 @@ const Artifacts = (Props: {
                 className="flex flex-col border-r border-bolt-elements-borderColor h-full"
                 style={{ backgroundColor: "transparent" }}
               >
-                <PanelHeader>Files</PanelHeader>
+                <PanelHeader>{t("artifacts.files")}</PanelHeader>
                 <div className={styles.treeWrap}>
                   <FileTree
                     data={fileTree}
@@ -492,8 +496,10 @@ const Artifacts = (Props: {
                         })}
                       >
                         {saveStatus === "modified"
-                          ? "• Modified • Ctrl + S"
-                          : "• Saved"}
+                          ? t("artifacts.statusModified", {
+                              shortcut: "Ctrl + S",
+                            })
+                          : t("artifacts.statusSaved")}
                       </span>
                     )}
                   </div>
@@ -513,7 +519,7 @@ const Artifacts = (Props: {
                         setModal(true);
                       }}
                     >
-                      Preview
+                      {t("artifacts.preview")}
                     </Button>
                   )}
                 </div>
@@ -552,7 +558,7 @@ const Artifacts = (Props: {
                       },
                     )}
                   >
-                    Terminal
+                    {t("artifacts.terminal")}
                   </div>
                 </React.Fragment>
               </div>

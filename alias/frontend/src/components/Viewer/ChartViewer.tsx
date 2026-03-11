@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { BaseViewerProps } from "./types";
+import { useI18n } from "@/context/LanguageContext";
 
 export const ChartViewer: React.FC<BaseViewerProps> = ({ content, style }) => {
+  const { t } = useI18n();
   const [imageUrl, setImageUrl] = useState<string>("");
 
   useEffect(() => {
@@ -23,7 +25,7 @@ export const ChartViewer: React.FC<BaseViewerProps> = ({ content, style }) => {
   }, [content]);
 
   if (!imageUrl) {
-    return <div>Invalid chart URL</div>;
+    return <div>{t("viewer.chartInvalid")}</div>;
   }
 
   return (
@@ -41,7 +43,7 @@ export const ChartViewer: React.FC<BaseViewerProps> = ({ content, style }) => {
     >
       <img
         src={imageUrl}
-        alt="Chart"
+        alt={t("viewer.chartAlt")}
         style={{
           maxWidth: "100%",
           maxHeight: "100%",

@@ -11,6 +11,7 @@ import {
 } from "@/types/message";
 import { MAX_FILE_SIZE } from "@/utils/constant";
 import { message } from "@agentscope-ai/design";
+import { translate } from "@/i18n/translate";
 const sampleFiles = import.meta.glob("@/assets/file/*");
 // Map API message to chat message
 const mapApiMessageToChatMessage = (
@@ -153,7 +154,7 @@ const getPromptFile = async (files: string | string[]) => {
           const file = new File([blob], fileName, { type: blob.type });
 
           if (file.size > MAX_FILE_SIZE) {
-            message.error(`File ${file.name} exceeds 10MB limit`);
+            message.error(translate("chat.fileTooLarge", { name: file.name }));
             return null;
           }
 

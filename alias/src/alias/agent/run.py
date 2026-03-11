@@ -265,10 +265,6 @@ async def arun_meta_planner(
     # 创建完整工具包（包含所有工具）
     # add_all=True 表示添加所有可用工具
     worker_full_toolkit = AliasToolkit(sandbox, add_all=True)
-    
-    # 添加额外的工具
-    await add_tools(worker_full_toolkit)
-    logger.info("Init full toolkit")
 
     # 创建浏览器专用工具包
     # is_browser_toolkit=True 表示这是浏览器专用工具包
@@ -305,13 +301,21 @@ async def arun_meta_planner(
         browser_toolkit,
     )
 
+    # 获取模型配置
+    model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
+
+    # 添加 Meta Tools 等额外工具
+    await add_tools(
+        worker_full_toolkit,
+        model=model,
+        formatter=formatter,
+    )
+    logger.info("Init full toolkit")
+
     # -------------------------------------------------------------------------
     # 创建并注册各个 Agent
     # -------------------------------------------------------------------------
     try:
-        # 获取模型配置
-        model, formatter = MODEL_FORMATTER_MAPPING[MODEL_CONFIG_NAME]
-        
         # ---------------------------------------------------------------------
         # 创建浏览器 Agent
         # ---------------------------------------------------------------------
@@ -377,6 +381,7 @@ async def arun_meta_planner(
             memory=InMemoryMemory(),
             state_saving_dir=f"./agent-states/run-{time_str}",
             max_iters=100,
+            planner_mode="enforced",
             session_service=session_service,
             enable_clarification=enable_clarification,
             long_term_memory=long_term_memory,

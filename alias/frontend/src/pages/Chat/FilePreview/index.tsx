@@ -11,6 +11,7 @@ import { message } from "@agentscope-ai/design";
 import { SparkFalseLine } from "@agentscope-ai/icons";
 import React, { memo, useState } from "react";
 import styles from "./index.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 
 interface FilePreviewProps {
   filePreview: filePreviewItem[];
@@ -22,6 +23,7 @@ const FilePreview: React.FC<FilePreviewProps> = ({
   setFilePreview,
   conversationId,
 }) => {
+  const { t } = useI18n();
   const [localFileList, setLocalFileList] = useState<Set<string>>(new Set());
   const handleRemoveFile = async (fileName: string) => {
     const fileToRemove = filePreview.find((fp) => fp.name === fileName);
@@ -60,10 +62,10 @@ const FilePreview: React.FC<FilePreviewProps> = ({
             removeFileIds(FILE_IDS_STORAGE_KEY, conversationId);
         }
 
-        message.success(`File ${fileName} deleted`);
+        message.success(t("chat.fileDeleted", { name: fileName }));
       } catch (error) {
         console.error("Failed to delete file:", error);
-        message.error(`Failed to delete file ${fileName}, please try again`);
+        message.error(t("chat.deleteFileFailed", { name: fileName }));
       }
     } else {
       // Remove directly from preview list if file upload failed or was not successful
@@ -98,18 +100,24 @@ const FilePreview: React.FC<FilePreviewProps> = ({
                 </div>
                 <div className={styles.fileStatus}>
                   {file.status === "uploading" && (
-                    <span className={styles.uploading}>Uploading...</span>
+                    <span className={styles.uploading}>
+                      {t("chat.uploading")}
+                    </span>
                   )}
                   {file.status === "success" && (
-                    <span className={styles.success}>Upload successful</span>
+                    <span className={styles.success}>
+                      {t("chat.uploadSuccess")}
+                    </span>
                   )}
                   {file.status === "error" && (
-                    <span className={styles.error}>Upload failed</span>
+                    <span className={styles.error}>
+                      {t("chat.uploadFailed")}
+                    </span>
                   )}
                   <button
                     className={styles.removeButton}
                     onClick={() => handleRemoveFile(file.name)}
-                    title="Remove file"
+                    title={t("chat.removeFile")}
                   >
                     <SparkFalseLine />
                   </button>

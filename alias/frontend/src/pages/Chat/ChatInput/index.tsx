@@ -3,6 +3,7 @@ import { fileApi } from "@/services/api/file";
 import { FilePreview } from "@/types/api";
 import { ChatModeList, MAX_FILE_SIZE } from "@/utils/constant";
 import { formatFileSize, getUniqueFileName } from "@/utils/fileNameUtils";
+import { useI18n } from "@/context/LanguageContext";
 import {
   Attachments,
   Disclaimer,
@@ -47,13 +48,16 @@ const ChatInput: React.FC<ChatInputProps> = ({
   chatMode,
   filePreview,
 }) => {
+  const { t } = useI18n();
   const [attachedFiles, setAttachedFiles] = React.useState<AttachmentItem[]>(
     [],
   );
   const options = useMemo(() => {
     const getChatModeLabel = () => {
       const mode = ChatModeList.find((mode) => mode.value === chatMode);
-      return mode ? `${mode.label} · Ready` : "General Mode · Ready";
+      return mode
+        ? `${t(mode.labelKey)} · ${t("chat.modeReady")}`
+        : `${t("chat.mode.general")} · ${t("chat.modeReady")}`;
     };
 
     return [
@@ -65,12 +69,12 @@ const ChatInput: React.FC<ChatInputProps> = ({
       },
       {
         icon: "",
-        label: createModeLabel("Alias is handling the task..."),
+        label: createModeLabel(t("chat.aliasHandlingTask")),
         value: "isGenerating",
         tooltip: "",
       },
     ];
-  }, [chatMode]);
+  }, [chatMode, t]);
   const handleCustomRequest = async (options: {
     file: File;
     onSuccess: Function;
@@ -85,8 +89,8 @@ const ChatInput: React.FC<ChatInputProps> = ({
         // Get file list for current conversation
         const response: any = await conversationApi.getFiles(conversationId);
         if (!response.status || !response.payload) {
-          message.error("Failed to get file list");
-          onError(new Error("Failed to get file list"));
+          message.error(t("chat.fetchFileListFailed"));
+          onError(new Error(t("chat.fetchFileListFailed")));
           return;
         }
         existingFiles = [
@@ -98,21 +102,19 @@ const ChatInput: React.FC<ChatInputProps> = ({
       }
       // Check file size
       if (file.size > MAX_FILE_SIZE) {
-        message.error(`File ${file.name} exceeds 10MB limit`);
-        onError(new Error(`File ${file.name} exceeds 10MB limit`));
+        message.error(t("chat.fileTooLarge", { name: file.name }));
+        onError(
+          new Error(t("chat.fileTooLarge", { name: file.name })),
+        );
         return;
       }
 
       // Check if this file already exists locally (including files being uploaded)
       const isUploading = attachedFiles.some((fp) => fp.name === file.name);
       if (isUploading) {
-        message.error(
-          `File ${file.name} is being uploaded, please do not upload again.`,
-        );
+        message.error(t("chat.fileUploading", { name: file.name }));
         onError(
-          new Error(
-            `File ${file.name} is being uploaded, please do not upload again`,
-          ),
+          new Error(t("chat.fileUploading", { name: file.name })),
         );
         return;
       }
@@ -195,7 +197,9 @@ const ChatInput: React.FC<ChatInputProps> = ({
               : fp,
           ),
         );
-        message.success(`File ${uniqueFileName} uploaded successfully`);
+        message.success(
+          t("chat.fileUploadSuccess", { name: uniqueFileName }),
+        );
         onSuccess(uploadResponse.payload, file);
       } else {
         // Update status to error
@@ -221,13 +225,17 @@ const ChatInput: React.FC<ChatInputProps> = ({
               : fp,
           ),
         );
-        message.error(`File ${uniqueFileName} upload failed`);
-        onError(new Error("Upload failed"));
+        message.error(
+          t("chat.fileUploadFailed", { name: uniqueFileName }),
+        );
+        onError(new Error(t("chat.uploadFailed")));
       }
     } catch (error: any) {
       // Get file name (may have been renamed)
       const fileName = file.name;
-      message.error(`File ${fileName} upload failed, please try again`);
+      message.error(
+        t("chat.fileUploadFailedRetry", { name: fileName }),
+      );
       onError(error);
     }
   };
@@ -239,7 +247,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
     if (result.status) {
       setAttachedFiles(fileList);
       setFilePreview(filePreview.filter((item) => item.id !== file.uid));
-      message.success(`File ${file.name} deleted`);
+      message.success(t("chat.fileDeleted", { name: file.name }));
     }
   };
   const onSubmit = (value: string) => {
@@ -278,7 +286,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         onChange={() => {}}
       />
       <Input
-        placeholder="Please type here..."
+        placeholder={t("chat.inputPlaceholder")}
         header={senderHeader}
         prefix={[attachmentsNode]}
         loading={isGenerating && taskId ? true : false}
@@ -287,7 +295,7 @@ const ChatInput: React.FC<ChatInputProps> = ({
         value={value}
         onCancel={onCancel}
       />
-      <Disclaimer desc="AI can also make mistakes. Please use with caution." />
+      <Disclaimer desc={t("chat.disclaimer")} />
     </div>
   );
 };

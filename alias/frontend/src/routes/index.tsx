@@ -2,6 +2,7 @@ import Chat from "@/pages/Chat";
 import Login from "@/pages/Login";
 import SharePage from "@/pages/SharePage";
 import { ErrorBoundary } from "react-error-boundary";
+import { useI18n } from "@/context/LanguageContext";
 import { createBrowserRouter } from "react-router-dom";
 
 const ErrorFallback = ({
@@ -11,9 +12,10 @@ const ErrorFallback = ({
   error: Error;
   resetErrorBoundary: () => void;
 }) => {
+  const { t } = useI18n();
   return (
     <div style={{ padding: "20px", textAlign: "center" }}>
-      <h2>Something went wrong!</h2>
+      <h2>{t("app.errorFallback.title")}</h2>
       <p style={{ color: "red" }}>{error.message}</p>
       <button
         onClick={resetErrorBoundary}
@@ -26,7 +28,7 @@ const ErrorFallback = ({
           cursor: "pointer",
         }}
       >
-        Reload the page
+        {t("app.errorFallback.reload")}
       </button>
     </div>
   );

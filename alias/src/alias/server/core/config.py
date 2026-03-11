@@ -259,6 +259,10 @@ class SecurityConfig(BaseSettings):
         default=True,
         description="Auto create user when simple auth username not found.",
     )
+    SIMPLE_AUTH_DEFAULT_USERNAME: Optional[str] = Field(
+        default=None,
+        description="Fallback username when no auth token or header is provided.",
+    )
     SIMPLE_AUTH_EMAIL_DOMAIN: str = Field(
         default="simple.local",
         description="Email domain used to generate placeholder emails.",
@@ -501,6 +505,19 @@ class SandboxConfig(BaseSettings):
     SANDBOX_PUBLIC_HOST: Optional[str] = Field(
         default="localhost",
         description="Sandbox public host",
+    )
+
+    SANDBOX_REUSE_ENABLED: bool = Field(
+        default=False,
+        description="Reuse existing sandbox for the same user when creating new conversations.",
+    )
+    SANDBOX_REUSE_SAME_MODE: bool = Field(
+        default=True,
+        description="Only reuse sandbox when chat_mode matches.",
+    )
+    SANDBOX_REUSE_VALIDATE: bool = Field(
+        default=True,
+        description="Validate sandbox exists/healthy before reuse.",
     )
 
 

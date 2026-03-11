@@ -24,8 +24,10 @@ import {
   ToolIconType,
 } from "@/types/message";
 import { RoadMap } from "@/types/roadmap";
+import { useI18n } from "@/context/LanguageContext";
 
 const SharePage: React.FC = () => {
+  const { t } = useI18n();
   const { sessionId, userId } = useParams<{
     userId: string;
     sessionId: string;
@@ -216,7 +218,7 @@ const SharePage: React.FC = () => {
   useEffect(() => {
     const loadData = async () => {
       if (!sessionId || !userId) {
-        setError("Session ID does not exist");
+        setError(t("share.sessionNotFound"));
         setLoading(false);
         return;
       }
@@ -264,7 +266,7 @@ const SharePage: React.FC = () => {
           setConversationName(res.payload.name);
         }
       } catch (err) {
-        setError("Failed to load data");
+        setError(t("share.loadFailed"));
         console.error("Failed to load data:", err);
       } finally {
         setLoading(false);
@@ -278,11 +280,15 @@ const SharePage: React.FC = () => {
   const displayedMessages = messages.slice(0, currentStep);
 
   if (loading) {
-    return <div className={styles.loading}>Loading...</div>;
+    return <div className={styles.loading}>{t("share.loading")}</div>;
   }
 
   if (error) {
-    return <div className={styles.error}>Error: {error}</div>;
+    return (
+      <div className={styles.error}>
+        {t("share.error")}: {error}
+      </div>
+    );
   }
 
   return (
@@ -290,7 +296,7 @@ const SharePage: React.FC = () => {
       <div className={styles.mainContent}>
         <div className={styles.messageList} style={{ flex: 1 }}>
           <div className={styles.conversationName}>
-            Conversation Name: {conversationName}
+            {t("share.conversationName")}: {conversationName}
           </div>
           <ScrollToBottomButton
             className={styles.scrollWrapper}
@@ -322,7 +328,7 @@ const SharePage: React.FC = () => {
               }
               onClick={() => setActiveTab("workspace")}
             >
-              AGENT WORKSPACE
+              {t("workspace.title")}
             </div>
             <div
               className={
@@ -330,7 +336,7 @@ const SharePage: React.FC = () => {
               }
               onClick={() => setActiveTab("roadmap")}
             >
-              ROADMAP
+              {t("roadmap.title")}
             </div>
           </div>
           <div className={styles.tabContent}>
@@ -361,27 +367,27 @@ const SharePage: React.FC = () => {
               className={styles.controlButton}
               onClick={onPrevStep}
               disabled={currentStep === 1}
-              title="Step Back"
+              title={t("share.stepBack")}
             >
-              <img src={iconStepBack} alt="Step Back" />
+              <img src={iconStepBack} alt={t("share.stepBack")} />
             </button>
             <button
               className={styles.controlButton}
               onClick={() => setIsPlaying(!isPlaying)}
-              title={isPlaying ? "Pause" : "Play"}
+              title={isPlaying ? t("share.pause") : t("share.play")}
             >
               <img
                 src={isPlaying ? iconPause : iconPlay}
-                alt={isPlaying ? "Pause" : "Play"}
+                alt={isPlaying ? t("share.pause") : t("share.play")}
               />
             </button>
             <button
               className={styles.controlButton}
               onClick={onNextStep}
               disabled={currentStep === totalSteps}
-              title="Step Forward"
+              title={t("share.stepForward")}
             >
-              <img src={iconStepForward} alt="Step Forward" />
+              <img src={iconStepForward} alt={t("share.stepForward")} />
             </button>
             <div
               className={styles.progress}

@@ -6,7 +6,9 @@ import { SparkUpperrightArrowLine } from "@agentscope-ai/icons";
 import { Button, Flex } from "antd";
 import React, { memo } from "react";
 import styles from "./index.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 const WelcomeView: React.FC = ({}) => {
+  const { t } = useI18n();
   const goGitHub = (url: string) => {
     window.open(url, "_blank");
   };
@@ -21,7 +23,7 @@ const WelcomeView: React.FC = ({}) => {
             }}
           >
             <AgentscopeLogoIcon style={{ marginLeft: -5 }} />
-            AgentScope GitHub
+            {t("welcome.agentscopeRepo")}
             <SparkUpperrightArrowLine style={{ fontSize: "20px" }} />
           </Button>
           <Button
@@ -33,7 +35,7 @@ const WelcomeView: React.FC = ({}) => {
             }}
           >
             <AliasLogoIcon style={{ marginLeft: -5 }} />
-            Alias GitHub
+            {t("welcome.aliasRepo")}
             <SparkUpperrightArrowLine style={{ fontSize: "20px" }} />
           </Button>
         </Flex>
@@ -47,13 +49,13 @@ const WelcomeView: React.FC = ({}) => {
               <LogoIcon className="w-full h-full object-cover" />
             </div>
             <div className={styles.label}>
-              : Start It Now, Extend It Your Way, Deploy All with Ease
+              {t("welcome.tagline")}
             </div>
           </div>
         }
         desc={
           <div className={styles.description}>
-            Let the Agent help you with everything you want to do
+            {t("welcome.description")}
           </div>
         }
       />

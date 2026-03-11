@@ -5,6 +5,7 @@ import { Flex } from "antd";
 import React, { memo } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./index.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 
 interface UserInfoProps {
   uid: string;
@@ -16,6 +17,7 @@ interface AvatarProps {
 }
 const Avatar: React.FC<AvatarProps> = ({ userInfo }) => {
   const navigate = useNavigate();
+  const { t } = useI18n();
   const logOutHandle = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("refresh_token");
@@ -33,7 +35,7 @@ const Avatar: React.FC<AvatarProps> = ({ userInfo }) => {
             <div className={styles.header}>
               <img
                 src={UserHeader}
-                alt="User"
+                alt={t("user.avatarAlt")}
                 className="w-full h-full object-cover"
               />
             </div>
@@ -50,7 +52,7 @@ const Avatar: React.FC<AvatarProps> = ({ userInfo }) => {
               onClick={logOutHandle}
             >
               <SparkSwitchLine style={{ fontSize: 18 }} />
-              Switch account
+              {t("user.switchAccount")}
             </Flex>
             <Flex
               gap="small"
@@ -58,7 +60,7 @@ const Avatar: React.FC<AvatarProps> = ({ userInfo }) => {
               className={styles.item}
               onClick={logOutHandle}
             >
-              <SparkEscapeLine style={{ fontSize: 18 }} /> Log out
+              <SparkEscapeLine style={{ fontSize: 18 }} /> {t("user.logout")}
             </Flex>
           </Flex>
         </div>
@@ -68,7 +70,7 @@ const Avatar: React.FC<AvatarProps> = ({ userInfo }) => {
         <div className="w-8 h-8 rounded-full bg-gray-200 overflow-hidden">
           <img
             src={UserHeader}
-            alt="User"
+            alt={t("user.avatarAlt")}
             className="w-full h-full object-cover"
           />
         </div>

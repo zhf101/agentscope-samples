@@ -3,10 +3,12 @@ import { memo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./index.module.scss";
 import { getSimpleUsername } from "@/utils/simpleAuth";
+import { useI18n } from "@/context/LanguageContext";
 
 const LoginModal = () => {
   const [isModalOpen, setIsModalOpen] = useState<boolean>(true);
   const navigate = useNavigate();
+  const { t } = useI18n();
   const showModal = () => {
     setIsModalOpen(true);
   };
@@ -35,10 +37,9 @@ const LoginModal = () => {
         closable={false}
       >
         <div className={styles.modalWrap}>
-          <h1>Welcome</h1>
+          <h1>{t("loginModal.title")}</h1>
           <p className={styles.tips}>
-            Login or register to chat with AgentScope, upload files and images,
-            generate images or videos, etc.
+            {t("loginModal.tips")}
           </p>
           <Button
             type="primary"
@@ -47,7 +48,7 @@ const LoginModal = () => {
               navigate("/login?mode=login");
             }}
           >
-            Login
+            {t("login.signIn")}
           </Button>
           <Button
             className={styles.registerBtn}
@@ -55,7 +56,7 @@ const LoginModal = () => {
               navigate("/login?mode=register");
             }}
           >
-            Register
+            {t("login.signUp")}
           </Button>
         </div>
       </Modal>

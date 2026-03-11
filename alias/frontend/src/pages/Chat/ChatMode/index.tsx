@@ -7,6 +7,7 @@ import {
   SparkSingleStarLine,
 } from "@agentscope-ai/icons";
 import { ChatModeList, ChatModeType } from "@/utils/constant";
+import { useI18n } from "@/context/LanguageContext";
 import styles from "./index.module.scss";
 
 interface ChatModeProps {
@@ -18,6 +19,7 @@ const ChatMode: React.FC<ChatModeProps> = ({
   chatModeValue,
   setChatModeValue,
 }) => {
+  const { t } = useI18n();
   const getIcon = (value: string) => {
     switch (value) {
       case ChatModeType.GENERAL:
@@ -47,7 +49,7 @@ const ChatMode: React.FC<ChatModeProps> = ({
             }}
           >
             {getIcon(item.value)}
-            {item.label}
+            {t(item.labelKey)}
           </Button>
         );
       })}

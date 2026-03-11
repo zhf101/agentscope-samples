@@ -3,6 +3,7 @@ import React from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import styles from "./Message.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 
 interface BaseMessageProps {
   message: Message;
@@ -15,6 +16,7 @@ export const BaseMessage: React.FC<BaseMessageProps> = ({
   children,
   onFeedback,
 }) => {
+  const { t } = useI18n();
   const isAssistant = message.role === MessageRole.ASSISTANT;
   const isRunning = message.status === MessageState.RUNNING;
   const isWaiting = message.status === MessageState.WAITING;
@@ -41,9 +43,13 @@ export const BaseMessage: React.FC<BaseMessageProps> = ({
         {renderContent(children)}
         {isRunning && <div className={styles.loading}>...</div>}
         {isWaiting && (
-          <div className={styles.waiting}>Waiting for user selection...</div>
+          <div className={styles.waiting}>
+            {t("chat.waitingSelection")}
+          </div>
         )}
-        {isError && <div className={styles.error}>An error occurred</div>}
+        {isError && (
+          <div className={styles.error}>{t("chat.messageError")}</div>
+        )}
       </div>
       {isAssistant && onFeedback && (
         <div className={styles.feedback}>

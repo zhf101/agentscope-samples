@@ -2,6 +2,7 @@ import LogoIcon from "@/components/LogoIcon";
 import { useMessage } from "@/context/MessageContext";
 import { useTheme } from "@/context/ThemeContext";
 import { useWorkspace } from "@/context/WorkspaceContext";
+import { useI18n } from "@/context/LanguageContext";
 import { conversationApi } from "@/services/api/conversation";
 import { loginApi } from "@/services/api/login";
 import type { ApiResponse, ListResponsePayload } from "@/types/api";
@@ -45,6 +46,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   setNewConversation,
 }) => {
   const { theme, setTheme } = useTheme();
+  const { t, locale, setLocale } = useI18n();
   const { setDisplayedContent, setActiveKey, setArgs, setMessageList } =
     useWorkspace();
   const { setCurrentConversation } = useMessage();
@@ -84,7 +86,7 @@ const Sidebar: React.FC<SidebarProps> = ({
         }
       }
     } catch (error) {
-      message.error("Failed to fetch conversation history");
+      message.error(t("chat.fetchHistoryFailed"));
     }
   };
 
@@ -146,11 +148,10 @@ const Sidebar: React.FC<SidebarProps> = ({
 
   const deletedConversation = async (id: string) => {
     AlertDialog.warning({
-      title: "Confirm deletion of this conversation?",
-      children:
-        "Once deleted, it cannot be recovered. Please proceed with caution.",
+      title: t("chat.deleteConversationConfirmTitle"),
+      children: t("chat.deleteConversationConfirmContent"),
       centered: true,
-      okText: "Confirm deletion",
+      okText: t("chat.deleteConversationConfirmOk"),
       onOk: async () => {
         try {
           const reslut = await conversationApi.delete(id);
@@ -159,12 +160,12 @@ const Sidebar: React.FC<SidebarProps> = ({
               conversations.filter((item) => item.id !== id) || [],
             );
             message.success(
-              reslut.message || "Conversation deleted successfully",
+              reslut.message || t("chat.deleteConversationSuccess"),
             );
             if (conversationId === id) goNewChat();
           }
         } catch (error) {
-          message.error("Failed to delete conversation");
+          message.error(t("chat.deleteConversationFailed"));
         }
       },
     });
@@ -187,7 +188,7 @@ const Sidebar: React.FC<SidebarProps> = ({
   // Get delete menu item
   const getDeleteMenuItem = [
     {
-      label: "Delete",
+      label: t("common.delete"),
       key: "delete",
       icon: <SparkDeleteLine />,
       danger: true,
@@ -215,7 +216,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     const filteredConversations = getFilteredConversations(type);
     const showPanel = isCollected ? showCollect : showList;
     const setShowPanel = isCollected ? setShowCollect : setShowList;
-    const title = isCollected ? "My Collection" : "History";
+    const title = isCollected ? t("chat.collection") : t("chat.history");
     const icon = isCollected ? (
       <SparkSocialInteraction01Line style={iconStyle} />
     ) : (
@@ -228,7 +229,7 @@ const Sidebar: React.FC<SidebarProps> = ({
     // Show empty state if there are no conversations (only when expanded)
     if (filteredConversations.length === 0) {
       return isExpanded && !isCollected ? (
-        <div>No conversation records</div>
+        <div>{t("chat.noConversations")}</div>
       ) : null;
     }
 
@@ -343,14 +344,14 @@ const Sidebar: React.FC<SidebarProps> = ({
             [styles.active]: !conversationId,
           })}
           onClick={goNewChat}
-          title={!isExpanded ? "New Agent Task" : undefined}
+          title={!isExpanded ? t("chat.newTask") : undefined}
         >
           {isHomePage ? (
             <SparkChatTabFill style={iconStyle} />
           ) : (
             <SparkMessageLine style={iconStyle} />
           )}
-          <div className={styles.itemText}>New Agent Task</div>
+          <div className={styles.itemText}>{t("chat.newTask")}</div>
         </div>
 
         {/* History Sections */}
@@ -377,6 +378,14 @@ const Sidebar: React.FC<SidebarProps> = ({
                 <SparkSunLine style={iconStyle} />
               )}
             </Button>
+            <Button
+              type="text"
+              title={t("language.toggleTitle")}
+              onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
+              className={styles.iconButton}
+            >
+              {t("language.toggle")}
+            </Button>
           </div>
         ) : (
           <>
@@ -386,6 +395,14 @@ const Sidebar: React.FC<SidebarProps> = ({
               className={styles.iconButton}
             >
               <SparkEffciencyLine style={iconStyle} />
+            </Button>
+            <Button
+              type="text"
+              title={t("language.toggleTitle")}
+              onClick={() => setLocale(locale === "zh" ? "en" : "zh")}
+              className={styles.iconButton}
+            >
+              {t("language.toggle")}
             </Button>
             <Button
               type="text"

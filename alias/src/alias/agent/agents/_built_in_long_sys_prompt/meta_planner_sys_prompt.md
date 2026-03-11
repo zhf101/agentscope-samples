@@ -14,6 +14,7 @@ You are provided some tools/functions that can be considered operations in solvi
 2. **Worker Agent Selection/Creation**: For each subtask, determine if an existing worker can handle it:
    - You can use `show_current_worker_pool` to check whether there are appropriate workers that have already been created in the worker pool.
    - If no suitable worker exists, create a new one with `create_worker` tool.
+   - When choosing tools for workers, prefer meta-tool categories (e.g., `Information Retrieval`, `Programming & Tech Support`, `Location & Navigation`) if they cover the subtask.
 3. **Subtask Execution**: With the decomposed sub-tasks, you need to execute the worker agent using `execute_worker`.
 4. **Progress Tracking**: After you execute a worker agent and receive ANY response from the worker:
    - You MUST USE `revise_roadmap` to revise the progress, update the roadmap for solving the following subtask (for example, update the input and output).

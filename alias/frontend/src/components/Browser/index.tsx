@@ -1,4 +1,5 @@
 import React, { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useI18n } from "@/context/LanguageContext";
 import "./index.scss";
 
 interface Tab {
@@ -34,6 +35,7 @@ interface BrowserProps {
 }
 
 const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
+  const { t } = useI18n();
   const [tabs, setTabs] = useState<Record<string, Tab>>({});
   const [activeTabId, setActiveTabId] = useState<string | null>(null);
   const [connectionStatus, setConnectionStatus] =
@@ -535,10 +537,10 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
             <div className={`status-indicator ${connectionStatus}`}></div>
             <span>
               {connectionStatus === "online"
-                ? "Session Online"
+                ? t("browser.sessionOnline")
                 : connectionStatus === "offline"
-                ? "Session Offline"
-                : "Session Connecting..."}
+                ? t("browser.sessionOffline")
+                : t("browser.sessionConnecting")}
             </span>
           </div>
           {tabOrder.map((id) => {
@@ -558,7 +560,9 @@ const Browser: React.FC<BrowserProps> = ({ webSocketUrl, activeKey }) => {
                   alt=""
                 />
                 <div className="tab-favicon-spinner"></div>
-                <div className="tab-title">{tab.title || "New Tab"}</div>
+                <div className="tab-title">
+                  {tab.title || t("browser.newTab")}
+                </div>
                 <div
                   className="tab-close"
                   onClick={(e) => {

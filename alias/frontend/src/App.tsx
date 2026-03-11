@@ -9,6 +9,7 @@ import { router } from "./routes";
 import { WorkspaceProvider } from "@/context/WorkspaceContext.tsx";
 import { ThemeProvider, useTheme } from "@/context/ThemeContext.tsx";
 import { MessageProvider } from "@/context/MessageContext";
+import { LanguageProvider } from "@/context/LanguageContext";
 
 const AppContent: React.FC = () => {
   const { theme: currentTheme } = useTheme();
@@ -37,7 +38,9 @@ const AppContent: React.FC = () => {
 const App: React.FC = () => {
   return (
     <ThemeProvider>
-      <AppContent />
+      <LanguageProvider>
+        <AppContent />
+      </LanguageProvider>
     </ThemeProvider>
   );
 };

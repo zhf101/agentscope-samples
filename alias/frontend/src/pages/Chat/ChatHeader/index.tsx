@@ -13,8 +13,6 @@ import { ShareModal } from "@/components/ShareModal";
 
 interface ChatHeaderProps {
   currentConversation: Conversation | null;
-  languageType: string;
-  setLanguageType: (type: string) => void;
   setCurrentConversation: (con: Conversation) => void;
 }
 const iconStyle = {
@@ -24,7 +22,6 @@ const iconStyle = {
 };
 const ChatHeader: React.FC<ChatHeaderProps> = ({
   currentConversation,
-  languageType,
   setCurrentConversation,
 }) => {
   const [nowConversation, setNowConversation] = useState<Conversation | null>(

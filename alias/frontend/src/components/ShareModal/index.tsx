@@ -3,6 +3,7 @@ import { Conversation } from "@/types/api";
 import { Button, Input, message, Modal, Switch } from "@agentscope-ai/design";
 import copy from "copy-to-clipboard";
 import React, { useState } from "react";
+import { useI18n } from "@/context/LanguageContext";
 
 import styles from "./index.module.scss";
 
@@ -23,6 +24,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
   conversationId,
   setCurrentConversation,
 }) => {
+  const { t } = useI18n();
   const [copied, setCopied] = useState(false);
   const [isShared, setIsShared] = useState(shared);
 
@@ -31,7 +33,7 @@ export const ShareModal: React.FC<ShareModalProps> = ({
     copy(shareUrl);
     setCopied(true);
 
-    message.success("Share link copied to clipboard");
+    message.success(t("share.copySuccess"));
     setTimeout(() => setCopied(false), 2000);
     onClose();
   };
@@ -46,26 +48,26 @@ export const ShareModal: React.FC<ShareModalProps> = ({
           }
         })
         .catch((error) => {
-          message.error("network error");
+          message.error(t("share.networkError"));
         });
     } else setIsShared(share);
   };
 
   return (
     <Modal
-      title="Share This Conversation"
+      title={t("share.title")}
       open={isOpen}
       onCancel={onClose}
       footer={null}
       width={400}
     >
       <div className={styles.container}>
-        <div>Are you sure you want to share this conversation?</div>
+        <div>{t("share.confirm")}</div>
         <Switch
           className={styles.share}
           checked={isShared}
           onChange={onChangeShare}
-          label={isShared ? "Opening" : "Closed"}
+          label={isShared ? t("share.on") : t("share.off")}
         />
         <span></span>
         <div className={styles.urlContainer}>
@@ -76,12 +78,11 @@ export const ShareModal: React.FC<ShareModalProps> = ({
             className={styles.urlInput}
           />
           <Button type="primary" disabled={!isShared} onClick={handleCopy}>
-            {copied ? "Copied" : "Copy Link"}
+            {copied ? t("share.linkCopied") : t("share.copyLink")}
           </Button>
         </div>
         <p className={styles.description}>
-          Copy this link and share it with others, they can view the contents of
-          this conversation.
+          {t("share.description")}
         </p>
       </div>
     </Modal>

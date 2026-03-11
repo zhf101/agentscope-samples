@@ -4,6 +4,7 @@ import { Flex } from "antd";
 import { SparkEditLine } from "@agentscope-ai/icons";
 import { useWorkspace } from "@/context/WorkspaceContext";
 import { isAtBottom } from "@/utils/sharedRefs";
+import { useI18n } from "@/context/LanguageContext";
 
 interface RoadmapButtonProps {
   handleSendMessage: (message: string) => void;
@@ -17,6 +18,7 @@ const RoadmapButton: React.FC<RoadmapButtonProps> = ({
   startTimer,
   setShowRoadmapEditBtn,
 }) => {
+  const { t } = useI18n();
   const { setActiveKey } = useWorkspace();
   const shouldScrollRef = useRef(isAtBottom.current);
   useLayoutEffect(() => {
@@ -24,8 +26,7 @@ const RoadmapButton: React.FC<RoadmapButtonProps> = ({
     startTimer();
   }, [startTimer]);
   const acceptedRoadmap = () => {
-    const acceptedMessage =
-      "I have accepted the Roadmap, please proceed with the execution";
+    const acceptedMessage = t("roadmap.acceptedMessage");
     handleSendMessage(acceptedMessage);
     setShow(false);
   };
@@ -38,10 +39,10 @@ const RoadmapButton: React.FC<RoadmapButtonProps> = ({
           setShowRoadmapEditBtn(true);
         }}
       >
-        <SparkEditLine /> Edit Roadmap
+        <SparkEditLine /> {t("roadmap.editRoadmap")}
       </Button>
       <Button onClick={acceptedRoadmap}>
-        <SparkEditLine /> Accept Roadmap
+        <SparkEditLine /> {t("roadmap.acceptRoadmap")}
       </Button>
     </Flex>
   );

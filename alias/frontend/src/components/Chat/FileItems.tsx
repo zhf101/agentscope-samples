@@ -9,6 +9,7 @@ import { formatFileSize } from "@/utils/fileNameUtils";
 import { attachSimpleAuthHeader, getSimpleUsername } from "@/utils/simpleAuth";
 import React from "react";
 import { useLocation, useParams } from "react-router-dom";
+import { useI18n } from "@/context/LanguageContext";
 
 import styles from "./Message.module.scss";
 
@@ -43,23 +44,25 @@ const getFileIcon = (filename: string) => {
   }
 };
 
-const getFileTypeText = (filename: string) => {
-  if (!filename) return "FILE";
-  const ext = filename.split(".").pop()?.toUpperCase();
-  if (ext === "XLS" || ext === "XLSX") return "XLS";
-  if (ext === "PDF") return "PDF";
-  if (ext === "DOC" || ext === "DOCX") return "DOC";
-  if (["JPG", "JPEG", "PNG", "GIF"].includes(ext || "")) return "IMG";
-  return ext || "FILE";
-};
-
 export const FileItems: React.FC<FileItemsProps> = ({ files }) => {
+  const { t } = useI18n();
   const location = useLocation();
   const isSharePage = location.pathname.includes("/share/");
   const { sessionId, userId } = useParams<{
     userId: string;
     sessionId: string;
   }>();
+  const getFileTypeText = (filename: string) => {
+    if (!filename) return t("chat.fileTypeFile");
+    const ext = filename.split(".").pop()?.toUpperCase();
+    if (ext === "XLS" || ext === "XLSX") return "XLS";
+    if (ext === "PDF") return "PDF";
+    if (ext === "DOC" || ext === "DOCX") return "DOC";
+    if (["JPG", "JPEG", "PNG", "GIF"].includes(ext || "")) {
+      return t("chat.fileTypeImage");
+    }
+    return ext || t("chat.fileTypeFile");
+  };
   if (!files || !Array.isArray(files) || files.length === 0) {
     return null;
   }
@@ -119,12 +122,12 @@ export const FileItems: React.FC<FileItemsProps> = ({ files }) => {
             <img
               src={getFileIcon(file?.filename || "")}
               className={styles.fileIcon}
-              alt="file icon"
+              alt={t("chat.fileIconAlt")}
             />
           </div>
           <div className={styles.fileInfoBlock}>
             <div className={styles.fileName} title={file?.filename}>
-              {file?.filename || "Unknown file"}
+              {file?.filename || t("chat.unknownFile")}
             </div>
             <div className={styles.fileSize}>
               {getFileTypeText(file?.filename || "")}{" "}
@@ -139,7 +142,7 @@ export const FileItems: React.FC<FileItemsProps> = ({ files }) => {
               }}
               className={styles.downloadBtn}
             >
-              Preview
+              {t("chat.preview")}
             </button>
           )}
         </div>

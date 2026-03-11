@@ -4,6 +4,7 @@ import {
 } from "@/types/message";
 import React, { useState } from "react";
 import styles from "./Message.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 
 interface ClarificationMessageProps {
   message: ClarificationType;
@@ -14,6 +15,7 @@ export const ClarificationMessage: React.FC<ClarificationMessageProps> = ({
   message,
   onSelect,
 }) => {
+  const { t } = useI18n();
   const [selectedOptions, setSelectedOptions] = useState<string[]>([]);
 
   const handleOptionClick = (option: string) => {
@@ -70,7 +72,7 @@ export const ClarificationMessage: React.FC<ClarificationMessageProps> = ({
           onClick={handleConfirm}
           disabled={selectedOptions.length === 0}
         >
-          Confirm
+          {t("chat.confirm")}
         </button>
       )}
     </div>

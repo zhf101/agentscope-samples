@@ -337,7 +337,7 @@ class ChatService:
                             break
                         elif isinstance(event, HeartBeatEvent):
                             # 心跳事件用于保活连接，一般不产出业务消息。
-                            pass
+                            continue
                         elif isinstance(event, MessageCreateEvent):
                             message = event.message
                             create_message_time = message.create_time
@@ -389,9 +389,10 @@ class ChatService:
                         # yield 表示“把一个结果产出给调用方，然后函数可继续执行”
                         # 这是流式输出的核心语法。
                         yield output
-                        logger.warning(
-                            f"conversation service yield outputs: {output}",
-                        )
+                        if messages or roadmap:
+                            logger.warning(
+                                f"conversation service yield outputs: {output}",
+                            )
                 except BaseError as e:
                     # 业务异常原样抛出，让上层按统一规则处理。
                     logger.error(f"{e}: {traceback.format_exc()}")

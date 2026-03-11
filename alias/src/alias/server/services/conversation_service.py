@@ -52,6 +52,48 @@ class ConversationService(BaseService[Conversation]):
         self.plan_service = PlanService(session=session)
         self.state_service = StateService(session=session)
 
+    async def _pick_reusable_sandbox(
+        self,
+        user_id: uuid.UUID,
+        chat_mode: Optional[ChatMode],
+    ) -> Optional[Tuple[AliasSandbox, Conversation]]:
+        if not settings.SANDBOX_REUSE_ENABLED:
+            return None
+
+        filters: Dict[str, Any] = {"user_id": user_id, "deleted": False}
+        if settings.SANDBOX_REUSE_SAME_MODE and chat_mode is not None:
+            filters["chat_mode"] = chat_mode
+
+        pagination = PaginationParams(
+            page=1,
+            page_size=5,
+            order_by="update_time",
+            order_direction="desc",
+        )
+        candidates = await self.paginate(
+            filters=filters,
+            pagination=pagination,
+        )
+        for candidate in candidates:
+            if not candidate.sandbox_id:
+                continue
+            sandbox = AliasSandbox(
+                sandbox_id=candidate.sandbox_id,
+                base_url=settings.SANDBOX_URL,
+                bearer_token=settings.SANDBOX_BEARER_TOKEN,
+            )
+            if settings.SANDBOX_REUSE_VALIDATE:
+                try:
+                    sandbox.get_info()
+                except Exception as exc:
+                    logger.warning(
+                        f"Sandbox reuse validation failed: {exc}",
+                    )
+                    continue
+            return sandbox, candidate
+
+        return None
+
     async def _validate_exists(self, instance_id: uuid.UUID) -> None:
         # 校验会话存在
         conversation = await self.get(instance_id)
@@ -87,12 +129,21 @@ class ConversationService(BaseService[Conversation]):
         description: Optional[str] = "",
         chat_mode: Optional[ChatMode] = ChatMode.GENERAL,
     ):
-        # 为会话创建一个对应的沙盒环境
-        sandbox = AliasSandbox(
-            base_url=settings.SANDBOX_URL,
-            bearer_token=settings.SANDBOX_BEARER_TOKEN,
+        # 为会话创建/复用一个对应的沙盒环境
+        sandbox = None
+        reused_from: Optional[Conversation] = None
+        reuse_result = await self._pick_reusable_sandbox(
+            user_id=user_id,
+            chat_mode=chat_mode,
         )
-        sandbox.__enter__()
+        if reuse_result:
+            sandbox, reused_from = reuse_result
+        else:
+            sandbox = AliasSandbox(
+                base_url=settings.SANDBOX_URL,
+                bearer_token=settings.SANDBOX_BEARER_TOKEN,
+            )
+            sandbox.__enter__()
 
         # 组装会话数据
         conversation_data = Conversation(
@@ -100,9 +151,17 @@ class ConversationService(BaseService[Conversation]):
             name=name or "New conversation",
             description=description,
             sandbox_id=sandbox.sandbox_id,
-            sandbox_url=sandbox.desktop_url.replace(
-                "localhost",
-                settings.SANDBOX_PUBLIC_HOST,
+            sandbox_url=(
+                sandbox.desktop_url.replace(
+                    "localhost",
+                    settings.SANDBOX_PUBLIC_HOST,
+                )
+                if sandbox
+                else (
+                    reused_from.sandbox_url
+                    if reused_from
+                    else ""
+                )
             ),
             chat_mode=chat_mode,
         )
@@ -187,13 +246,22 @@ class ConversationService(BaseService[Conversation]):
         await self.state_service.delete_state(conversation_id=conversation_id)
         await self.plan_service.delete_plan(conversation_id=conversation_id)
 
-        # 清理沙盒资源
-        sandbox = AliasSandbox(
-            sandbox_id=conversation.sandbox_id,
-            base_url=settings.SANDBOX_URL,
-            bearer_token=settings.SANDBOX_BEARER_TOKEN,
+        # 清理沙盒资源（仅在没有其它会话复用时）
+        ref_count = await self.count_by_fields(
+            filters={"sandbox_id": conversation.sandbox_id},
         )
-        sandbox._cleanup()  # pylint: disable=W0212
+        if ref_count <= 1:
+            sandbox = AliasSandbox(
+                sandbox_id=conversation.sandbox_id,
+                base_url=settings.SANDBOX_URL,
+                bearer_token=settings.SANDBOX_BEARER_TOKEN,
+            )
+            sandbox._cleanup()  # pylint: disable=W0212
+        else:
+            logger.info(
+                "Skip sandbox cleanup because it is reused by "
+                f"{ref_count - 1} other conversation(s).",
+            )
         await self.delete(conversation_id)
         return conversation
 

@@ -23,6 +23,7 @@ import { Flex, List } from "antd";
 import copy from "copy-to-clipboard";
 import React, { memo, useEffect, useMemo, useState } from "react";
 import styles from "./index.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 
 interface MetadataProps {
   session_id: string;
@@ -55,13 +56,14 @@ const Header: React.FC<{
   downHandle,
   addHabbit,
 }) => {
+  const { t } = useI18n();
   const fontSize = { fontSize: "20px" };
 
   return (
     <Flex gap="large" justify="space-between" style={{ padding: "20px 0" }}>
       <Flex style={{ width: "200px" }}>
         <Input
-          placeholder="Search Knowledge..."
+          placeholder={t("habbit.searchKnowledge")}
           prefix={<SparkSearchLine style={fontSize} />}
           value={searchKeyword}
           onChange={(e) => setSearchKeyword(e.target.value)}
@@ -76,22 +78,21 @@ const Header: React.FC<{
             items: [
               {
                 key: "1",
-                label: "Download",
+                label: t("common.download"),
                 icon: <SparkDownArrowLine style={{ fontSize: 20 }} />,
                 onClick: downHandle,
               },
               {
                 key: "2",
-                label: "Delete",
+                label: t("common.delete"),
                 danger: true,
                 icon: <SparkDeleteLine style={{ fontSize: 20 }} />,
                 onClick: () => {
                   AlertDialog.warning({
-                    title: "Confirm deletion of all habbits?",
-                    children:
-                      "Once deleted, it cannot be recovered. Please proceed with caution.",
+                    title: t("habbit.deleteAllConfirmTitle"),
+                    children: t("common.deleteConfirmDesc"),
                     centered: true,
-                    okText: "Confirm deletion",
+                    okText: t("common.confirmDelete"),
                     onOk: () => {},
                   });
                 },
@@ -104,7 +105,7 @@ const Header: React.FC<{
           </Button>
         </Dropdown>
         <Button type="primary" onClick={addHabbit}>
-          <SparkPlusLine style={fontSize} /> Add Habbit
+          <SparkPlusLine style={fontSize} /> {t("habbit.addHabit")}
         </Button>
       </Flex>
     </Flex>
@@ -112,6 +113,7 @@ const Header: React.FC<{
 };
 
 const HabbitModal: React.FC<HabbitModalProps> = (props) => {
+  const { t } = useI18n();
   const { open, setOpen, uid } = props;
   const [editOpen, setEditOpen] = useState(false);
   const [habbitContent, setHabbitContent] = useState("");
@@ -128,7 +130,7 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
         if (data && Array.isArray(data)) setDataList(data);
       })
       .catch((e) => {
-        message.error("Network error");
+        message.error(t("common.networkError"));
       });
   };
 
@@ -162,7 +164,7 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
       const contents = JSON.stringify(dataList, null, 2);
       if (contents) {
         copy(contents);
-        message.success("Copied successfully");
+        message.success(t("common.copiedSuccess"));
       }
     }
   };
@@ -181,7 +183,7 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
         document.body.removeChild(a);
         URL.revokeObjectURL(url);
       } catch (error) {
-        message.error("Download failed");
+        message.error(t("habbit.downloadFailed"));
       }
     }
   };
@@ -191,8 +193,8 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
     setSearchKeyword("");
   };
   const getTitle = () => {
-    if (pid) return "Edit habbit";
-    return "Add habbit";
+    if (pid) return t("habbit.editHabit");
+    return t("habbit.addHabit");
   };
 
   const onCloseEdit = () => {
@@ -203,15 +205,15 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
       const result = await HabbitApi.deleteProfiling(uid, pid);
       if (result) {
         getProfilingData();
-        message.success("successfully deleted habbit!");
+        message.success(t("habbit.deleteSuccess"));
       }
     } catch (error) {
-      message.error("Failed to delete habbit");
+      message.error(t("habbit.deleteFailed"));
     }
   };
   const onSure = async () => {
     if (!habbitContent) {
-      message.info("Please enter habbit");
+      message.info(t("habbit.enterHabit"));
       return;
     }
     try {
@@ -231,18 +233,18 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
         );
         if (result) {
           getProfilingData();
-          message.success("Habbit edited successfully!");
+          message.success(t("habbit.updateSuccess"));
         }
       } else {
         // add habbit
         const result = await HabbitApi.addProfiling(uid, habbitContent);
         if (result) {
           getProfilingData();
-          message.success("Habbit added successfully!");
+          message.success(t("habbit.addSuccess"));
         }
       }
     } catch (error) {
-      message.error("Network error");
+      message.error(t("common.networkError"));
     } finally {
       setLoading(false);
       onCloseEdit();
@@ -255,13 +257,13 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
       });
     } catch (error) {
       console.error("Error confirming profiling:", error);
-      message.error("Failed to confirm habit");
+      message.error(t("habbit.confirmFailed"));
     }
   };
   return (
     <>
       <Modal
-        title="Preserved Habbit"
+        title={t("habbit.savedTitle")}
         open={open}
         width={800}
         footer={false}
@@ -270,8 +272,7 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
       >
         <div style={{ height: "50vh", overflow: "auto" }}>
           <div>
-            Habbit enables Alias to learn user's preference and task specific
-            best practices.
+            {t("habbit.description")}
           </div>
           {/* Use extracted Header component */}
           <Header
@@ -293,7 +294,7 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
                         items: [
                           {
                             key: "1",
-                            label: "Edit",
+                            label: t("common.edit"),
                             icon: <SparkEditLine style={{ fontSize: 20 }} />,
                             onClick: () => {
                               editHabbit(item.content);
@@ -302,16 +303,15 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
                           },
                           {
                             key: "2",
-                            label: "Delete",
+                            label: t("common.delete"),
                             danger: true,
                             icon: <SparkDeleteLine style={{ fontSize: 20 }} />,
                             onClick: () => {
                               AlertDialog.warning({
-                                title: "Confirm deletion of this habbits?",
-                                children:
-                                  "Once deleted, it cannot be recovered. Please proceed with caution.",
+                                title: t("habbit.confirmDeleteHabitTitle"),
+                                children: t("common.deleteConfirmDesc"),
                                 centered: true,
-                                okText: "Confirm deletion",
+                                okText: t("common.confirmDelete"),
                                 onOk: () => {
                                   deleteProfiling(item.uid, item.pid);
                                 },
@@ -329,7 +329,7 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
                       />
                     </Dropdown>
                     {item.metadata.is_confirmed === 0 && (
-                      <Tooltip title="You need to manually click to confirm for it to take effect">
+                      <Tooltip title={t("habbit.manualConfirmTip")}>
                         <IconButton
                           size="middle"
                           shape="default"
@@ -353,15 +353,15 @@ const HabbitModal: React.FC<HabbitModalProps> = (props) => {
         title={getTitle()}
         open={editOpen}
         width={700}
-        okText="Sure"
+        okText={t("common.confirm")}
         onCancel={onCloseEdit}
         maskClosable={false}
         onOk={onSure}
         footer={
           <Flex gap={16} align="center" justify="flex-end">
-            <Button onClick={onCloseEdit}>Cancel</Button>
+            <Button onClick={onCloseEdit}>{t("common.cancel")}</Button>
             <Button type="primary" loading={loading} onClick={onSure}>
-              Sure
+              {t("common.confirm")}
             </Button>
           </Flex>
         }

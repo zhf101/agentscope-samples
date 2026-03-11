@@ -10,6 +10,7 @@ import {
 import { Flex } from "antd";
 import React, { memo, useEffect, useState } from "react";
 import styles from "./index.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 
 interface ToolCallMessageProps {
   message: ToolCallMessageType;
@@ -18,6 +19,7 @@ interface ToolCallMessageProps {
 
 export const ToolCallMessage: React.FC<ToolCallMessageProps> = memo(
   ({ message }) => {
+    const { t } = useI18n();
     const { setDisplayedContent, setActiveKey, setArgs, setMessageList } =
       useWorkspace();
     const [isExpanded, setIsExpanded] = useState(false);
@@ -61,11 +63,12 @@ export const ToolCallMessage: React.FC<ToolCallMessageProps> = memo(
     };
 
     const getToolName = () => {
+      const toolName = message?.tool_name || message.name || "";
       if (message.type === "tool_use")
-        return `Using Tool: ${message?.tool_name || message.name}`;
+        return `${t("chat.useTool")}: ${toolName}`;
       if (message.type === "tool_result")
-        return `Tool result: ${message?.tool_name || message.name}`;
-      return message?.tool_name || message.name;
+        return `${t("chat.toolResult")}: ${toolName}`;
+      return toolName;
     };
 
     const getToolArguments = () => {

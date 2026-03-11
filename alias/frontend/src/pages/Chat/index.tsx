@@ -6,6 +6,7 @@ import ScrollToBottomButton from "@/components/ScrollToBottomButton";
 import Workspace from "@/components/Workspace";
 import { useMessage } from "@/context/MessageContext";
 import { useWorkspace } from "@/context/WorkspaceContext.tsx";
+import { useI18n } from "@/context/LanguageContext";
 import { conversationApi } from "@/services/api/conversation";
 import {
   ApiMessage,
@@ -53,10 +54,12 @@ export const Chat = () => {
     string | null
   >(null);
   const [chatMode, setChatMode] = useState<ChatModeType>(ChatModeType.GENERAL);
-  const roadmapUpdateQuery = "I have updated the task content";
+  const { t, locale } = useI18n();
+  const roadmapUpdateQuery = t("chat.roadmapUpdatedQuery");
   const ScrollToBottomButtonRef = useRef<any>(null);
   const [taskId, setTaskId] = useState(""); // task_id is needed to stop conversation
-  const [languageType, setLanguageType] = useState<string>(LANGUAGETYPE.en_US);
+  const languageType =
+    locale === "zh" ? LANGUAGETYPE.zh_Hans : LANGUAGETYPE.en_US;
   const abortControllerRef = useRef<AbortController | null>(null);
   const [showRoadmapSelectBtn, setShowRoadmapSelectBtn] = useState(false); // Show roadmap button
   const [showRoadmapEditBtn, setShowRoadmapEditBtn] = useState(false);
@@ -128,20 +131,22 @@ export const Chat = () => {
     chatMode: string,
   ) => {
     try {
-      const defaultName = `Conversation ${dayjs().format("YYYY-MM-DD HH:mm")}`;
+      const defaultName = t("chat.defaultConversationName", {
+        time: dayjs().format("YYYY-MM-DD HH:mm"),
+      });
       const response = await conversationApi.create(
         name || defaultName,
-        description || "empty",
+        description || t("chat.emptyDescription"),
         chatMode,
       );
       if (!response.status || !response.payload) {
-        throw new Error("Failed to create conversation");
+        throw new Error(t("chat.createConversationFailed"));
       }
       const targetConversationId = response.payload.id;
       const newConversation: Conversation = {
         id: targetConversationId,
         name: name || defaultName,
-        description: description || "empty",
+        description: description || t("chat.emptyDescription"),
         runtime_status: "running",
         create_time: new Date().toISOString(),
         update_time: new Date().toISOString(),
@@ -234,7 +239,8 @@ export const Chat = () => {
             return;
           }
           message.error({
-            content: error.message || "Request failed, please try again later",
+            content:
+              error.message || t("chat.requestFailed"),
             duration: 3,
           });
           setTimeout(() => {
@@ -262,7 +268,7 @@ export const Chat = () => {
       const errorMessage: Message = {
         id: Date.now().toString(),
         role: MessageRole.ASSISTANT,
-        content: "Error, please try again later.",
+        content: t("chat.errorTryLater"),
         status: MessageState.ERROR,
         create_time: new Date().toISOString(),
         update_time: new Date().toISOString(),
@@ -408,7 +414,7 @@ export const Chat = () => {
           );
           setState({ conversationId: targetConversationId });
         } catch (error) {
-          message.error("Failed to create conversation");
+          message.error(t("chat.createConversationFailed"));
           console.error("Failed to create conversation:", error);
         }
       }
@@ -495,12 +501,12 @@ export const Chat = () => {
   };
   const items: TabsProps["items"] = [
     {
-      label: "Agent Workspace",
+      label: t("workspace.title"),
       key: "1",
       children: <Workspace />,
     },
     {
-      label: "Roadmap",
+      label: t("roadmap.title"),
       key: "roadmap",
       children: (
         <Roadmap
@@ -521,7 +527,7 @@ export const Chat = () => {
       ),
     },
     {
-      label: "Sandbox",
+      label: "Alias Sandbox",
       key: "3",
       children: <SandBox sandboxUrl={currentConversation?.sandbox_url || ""} />,
     },
@@ -556,8 +562,6 @@ export const Chat = () => {
         <div className={styles.rightContents}>
           <ChatHeader
             currentConversation={currentConversation}
-            languageType={languageType}
-            setLanguageType={setLanguageType}
             setCurrentConversation={setCurrentConversation}
           />
           <div className={styles.container}>

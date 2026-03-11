@@ -430,6 +430,50 @@ class WorkerManager(StateModule):
         else:
             self.worker_pool[agent.name] = (worker_info, agent)
 
+    def _prefer_meta_tools(self, tool_names: List[str]) -> List[str]:
+        """Prefer meta-tool categories when they cover selected tools."""
+        meta_config = getattr(self.worker_full_toolkit, "_meta_tool_config", None)
+        if not meta_config or not tool_names:
+            return tool_names
+
+        meta_categories = [
+            name
+            for name in meta_config.keys()
+            if name in self.worker_full_toolkit.tools
+        ]
+        if not meta_categories:
+            return tool_names
+
+        tool_to_category: dict[str, str] = {}
+        for category_name in meta_categories:
+            for tool_name in meta_config[category_name].get("tools", []):
+                tool_to_category.setdefault(tool_name, category_name)
+
+        preferred: List[str] = []
+        seen: set[str] = set()
+        for name in tool_names:
+            if name in meta_categories:
+                if name not in seen:
+                    preferred.append(name)
+                    seen.add(name)
+                continue
+
+            mapped_category = tool_to_category.get(name)
+            if mapped_category:
+                if mapped_category not in seen:
+                    preferred.append(mapped_category)
+                    seen.add(mapped_category)
+                if name not in seen:
+                    preferred.append(name)
+                    seen.add(name)
+                continue
+
+            if name not in seen:
+                preferred.append(name)
+                seen.add(name)
+
+        return preferred
+
     @staticmethod
     def _no_more_subtask_return() -> ToolResponse:
         """
@@ -495,6 +539,8 @@ class WorkerManager(StateModule):
         """
         if tool_names is None:
             tool_names = []
+
+        tool_names = self._prefer_meta_tools(tool_names)
 
         # Traditional AliasToolkit mode
         suffix = ""

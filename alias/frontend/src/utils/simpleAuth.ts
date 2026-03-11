@@ -1,6 +1,9 @@
 export const SIMPLE_AUTH_HEADER =
   import.meta.env.VITE_SIMPLE_AUTH_HEADER || "X-User-Name";
 
+const DEFAULT_SIMPLE_USERNAME =
+  import.meta.env.VITE_SIMPLE_USERNAME || "gdpSysUser";
+
 type SimpleUser = {
   username?: string;
   userName?: string;
@@ -12,7 +15,7 @@ export const getSimpleUsername = (): string => {
     globalUser?.username ||
     globalUser?.userName ||
     localStorage.getItem("simple_username") ||
-    import.meta.env.VITE_SIMPLE_USERNAME ||
+    DEFAULT_SIMPLE_USERNAME ||
     ""
   );
 };

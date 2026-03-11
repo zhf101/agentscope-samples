@@ -13,6 +13,8 @@ High-level responsibilities:
 """
 
 import io
+import json
+import os
 from typing import Optional, Union, Tuple
 
 from loguru import logger
@@ -40,7 +42,7 @@ class AliasSandbox(GUIMixin, BaseSandbox):
         base_url: Optional[str] = None,
         bearer_token: Optional[str] = None,
         sandbox_type: SandboxType = "alias",
-    ):
+        ):
         super().__init__(
             sandbox_id=sandbox_id,
             timeout=timeout,
@@ -48,6 +50,87 @@ class AliasSandbox(GUIMixin, BaseSandbox):
             bearer_token=bearer_token,
             sandbox_type=sandbox_type,
         )
+
+
+def _env_flag(name: str, default: str = "false") -> bool:
+    return os.getenv(name, default).strip().lower() in {
+        "1",
+        "true",
+        "yes",
+        "y",
+        "on",
+    }
+
+
+def _truncate_text(text: str, limit: int = 4000) -> str:
+    if len(text) <= limit:
+        return text
+    return text[:limit] + f"...(已截断 {len(text) - limit} 字符)"
+
+
+def _redact_headers(headers: dict | None) -> dict | None:
+    if headers is None:
+        return None
+    sensitive_keys = (
+        "authorization",
+        "api_key",
+        "apikey",
+        "token",
+        "secret",
+        "password",
+        "bearer",
+    )
+    cleaned = {}
+    for k, v in headers.items():
+        if any(key in str(k).lower() for key in sensitive_keys):
+            cleaned[k] = "***"
+        else:
+            cleaned[k] = v
+    return cleaned
+
+
+def _log_sandbox_http(
+    stage: str,
+    method: str,
+    url: str,
+    headers: dict | None = None,
+    params: dict | None = None,
+    body: object | None = None,
+    response: object | None = None,
+) -> None:
+    if not _env_flag("LOG_SANDBOX_HTTP", "false"):
+        return
+    try:
+        payload = {
+            "method": method,
+            "url": url,
+            "headers": _redact_headers(headers),
+            "params": params,
+        }
+        if body is not None:
+            if isinstance(body, (bytes, bytearray)):
+                payload["body"] = f"<binary {len(body)} bytes>"
+            elif isinstance(body, str):
+                payload["body"] = _truncate_text(body)
+            else:
+                payload["body"] = body
+        logger.info(
+            f"【Sandbox请求报文】【{stage}】{json.dumps(payload, ensure_ascii=False)}"
+        )
+        if response is not None:
+            resp_payload = {
+                "status_code": getattr(response, "status_code", None),
+                "headers": _redact_headers(
+                    getattr(response, "headers", None),
+                ),
+            }
+            if hasattr(response, "text"):
+                resp_payload["text"] = _truncate_text(str(response.text))
+            logger.info(
+                f"【Sandbox响应报文】【{stage}】{json.dumps(resp_payload, ensure_ascii=False)}"
+            )
+    except Exception as exc:
+        logger.warning(f"Sandbox 报文日志输出失败: {exc}")
 
     def download_file(
         self,
@@ -76,10 +159,25 @@ class AliasSandbox(GUIMixin, BaseSandbox):
             endpoint = f"{client.base_url}/workspace/files"
             params = {"file_path": file_path}
 
+            _log_sandbox_http(
+                "下载文件",
+                "GET",
+                endpoint,
+                headers=dict(client.session.headers),
+                params=params,
+            )
             response = client.session.get(
                 endpoint,
                 params=params,
                 timeout=self.timeout,
+            )
+            _log_sandbox_http(
+                "下载文件",
+                "GET",
+                endpoint,
+                headers=dict(client.session.headers),
+                params=params,
+                response=response,
             )
             response.raise_for_status()
             content = response.content
@@ -145,10 +243,27 @@ class AliasSandbox(GUIMixin, BaseSandbox):
             )
 
             try:
+                _log_sandbox_http(
+                    "上传文件",
+                    "POST",
+                    endpoint,
+                    headers=dict(client.session.headers),
+                    body={
+                        "filename": filename,
+                        "size": len(content),
+                    },
+                )
                 response = client.session.post(
                     endpoint,
                     files=files,
                     timeout=self.timeout,
+                )
+                _log_sandbox_http(
+                    "上传文件",
+                    "POST",
+                    endpoint,
+                    headers=dict(client.session.headers),
+                    response=response,
                 )
             finally:
                 # Restore original header to avoid affecting later API calls.

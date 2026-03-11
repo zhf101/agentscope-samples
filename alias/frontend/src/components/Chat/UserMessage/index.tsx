@@ -1,4 +1,5 @@
 import { useTheme } from "@/context/ThemeContext";
+import { useI18n } from "@/context/LanguageContext";
 import { UserMessage as UserMessageType } from "@/types/message";
 import { Modal } from "@agentscope-ai/design";
 import { SparkProcessJudgmentLine } from "@agentscope-ai/icons";
@@ -16,6 +17,7 @@ interface UserMessageProps {
 export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   const { files, roadmap } = message;
   const { theme } = useTheme();
+  const { t } = useI18n();
   const [diffOpen, setDiffOpen] = useState(false);
   const fontSize = { fontSize: 20 };
   const viewRoadmapDiff = () => {
@@ -61,25 +63,27 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
       {roadmap && (
         <Flex justify="flex-end">
           <div className={styles.roadmapCard} onClick={viewRoadmapDiff}>
-            <SparkProcessJudgmentLine
-              className={styles.roadmapLeft}
-              style={fontSize}
-            />
-            <div className={styles.roadmapRight}>
-              <div className={styles.title}>Roadmap</div>
-              <div className={styles.description}>{`${
-                roadmap.current?.subtasks?.length || 0
-              } Tasks`}</div>
+              <SparkProcessJudgmentLine
+                className={styles.roadmapLeft}
+                style={fontSize}
+              />
+              <div className={styles.roadmapRight}>
+              <div className={styles.title}>{t("chat.roadmap")}</div>
+              <div className={styles.description}>
+                {t("chat.tasksCount", {
+                  count: roadmap.current?.subtasks?.length || 0,
+                })}
+              </div>
+              </div>
             </div>
-          </div>
-        </Flex>
+          </Flex>
       )}
       {diffOpen && roadmap && (
         <Modal
           width={960}
           open={diffOpen}
           showDivider={false}
-          title="Roadmap Diff"
+          title={t("chat.roadmapDiff")}
           footer={null}
           onCancel={onCancel}
           styles={{
@@ -88,13 +92,13 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
         >
           <Flex className={styles.diffRoadmap}>
             <div className={`${styles.left} ${styles.diffRoadmapJson}`}>
-              <div>Previous JSON</div>
+              <div>{t("chat.previousJson")}</div>
               {roadmap.previous && (
                 <CodeView value={JSON.stringify(roadmap.previous, null, 2)} />
               )}
             </div>
             <div className={styles.diffRoadmapJson}>
-              <div>Current JSON</div>
+              <div>{t("chat.currentJson")}</div>
               {roadmap.current && (
                 <CodeView value={JSON.stringify(roadmap.current, null, 2)} />
               )}

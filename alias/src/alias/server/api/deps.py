@@ -83,8 +83,13 @@ async def get_current_user(
     if token:
         return await AuthService(session=session).get_user_by_token(token=token)
 
-    # 简化鉴权：从用户名头部获取用户
-    if settings.SIMPLE_AUTH_ENABLED and simple_username:
+    # 简化鉴权：从用户名头部获取用户（或使用默认用户名）
+    simple_username = simple_username or settings.SIMPLE_AUTH_DEFAULT_USERNAME
+    simple_auth_active = (
+        settings.SIMPLE_AUTH_ENABLED
+        or bool(settings.SIMPLE_AUTH_DEFAULT_USERNAME)
+    )
+    if simple_auth_active and simple_username:
         user_service = UserService(session=session)
         user = await user_service.get_first_by_field(
             "username",

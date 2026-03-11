@@ -15,6 +15,7 @@ import { theme } from "antd";
 import { useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import styles from "./index.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 
 export const Login = () => {
   const { token } = theme.useToken();
@@ -22,13 +23,14 @@ export const Login = () => {
   const urlParams = new URLSearchParams(window.location.search);
   const mode = urlParams.get("mode");
   const navigate = useNavigate();
+  const { t } = useI18n();
   const onFinish = async () => {
     try {
       const values = await formRef?.current?.validateFields();
       if (mode === "register") {
         delete values?.repassword;
         const register = await loginApi.register(values);
-        message.success("Registration successful");
+        message.success(t("login.registerSuccess"));
         navigate("/login?mode=login");
         const { payload } = register;
         if (payload?.access_token)
@@ -48,11 +50,13 @@ export const Login = () => {
       }
     } catch (errorInfo: any) {
       if (mode === "login") {
-        message.error(errorInfo?.response?.data?.detail || "Login failed");
+        message.error(
+          errorInfo?.response?.data?.detail || t("login.failed"),
+        );
       }
       if (mode === "register") {
         message.error(
-          errorInfo?.response?.data?.detail || "Registration failed",
+          errorInfo?.response?.data?.detail || t("login.registerFailed"),
         );
       }
     }
@@ -62,7 +66,11 @@ export const Login = () => {
       <div className={styles.logWrap}>
         <ProConfigProvider hashed={false}>
           <div style={{ backgroundColor: token.colorBgContainer }}>
-            <LoginForm title="AgentScope" formRef={formRef} onFinish={onFinish}>
+            <LoginForm
+              title={t("login.pageTitle")}
+              formRef={formRef}
+              onFinish={onFinish}
+            >
               {mode === "register" && (
                 <ProFormText
                   name="username"
@@ -70,11 +78,11 @@ export const Login = () => {
                     size: "large",
                     prefix: <SparkUserLine className={"prefixIcon"} />,
                   }}
-                  placeholder={"Please enter your username"}
+                  placeholder={t("login.usernamePlaceholder")}
                   rules={[
                     {
                       required: true,
-                      message: "Please enter your username!",
+                      message: t("login.usernameRequired"),
                     },
                   ]}
                 />
@@ -86,15 +94,15 @@ export const Login = () => {
                   size: "large",
                   prefix: <SparkEmailLine className={"prefixIcon"} />,
                 }}
-                placeholder={"Please enter your email"}
+                placeholder={t("login.emailPlaceholder")}
                 rules={[
                   {
                     required: true,
-                    message: "Please enter your email!",
+                    message: t("login.emailRequired"),
                   },
                   {
                     pattern: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-                    message: "Please enter a valid email address",
+                    message: t("login.emailInvalid"),
                   },
                 ]}
               />
@@ -104,15 +112,15 @@ export const Login = () => {
                   size: "large",
                   prefix: <SparkLockLine className={"prefixIcon"} />,
                 }}
-                placeholder={"Please enter your password"}
+                placeholder={t("login.passwordPlaceholder")}
                 rules={[
                   {
                     required: true,
-                    message: "Please enter your password",
+                    message: t("login.passwordRequired"),
                   },
                   {
                     pattern: /^\S{2,40}$/,
-                    message: "Please enter a valid password",
+                    message: t("login.passwordInvalid"),
                   },
                 ]}
               />
@@ -123,11 +131,11 @@ export const Login = () => {
                     size: "large",
                     prefix: <SparkLockLine className={"prefixIcon"} />,
                   }}
-                  placeholder={"Please enter your password again"}
+                  placeholder={t("login.repasswordPlaceholder")}
                   rules={[
                     {
                       required: true,
-                      message: "Please enter your password",
+                      message: t("login.passwordRequired"),
                     },
                     ({ getFieldValue }) => ({
                       validator(_, value) {
@@ -135,7 +143,7 @@ export const Login = () => {
                           return Promise.resolve();
                         }
                         return Promise.reject(
-                          new Error("Passwords do not match, please re-enter"),
+                          new Error(t("login.passwordMismatch")),
                         );
                       },
                     }),

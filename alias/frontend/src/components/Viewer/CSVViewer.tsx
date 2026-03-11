@@ -1,7 +1,9 @@
 import React from "react";
 import { BaseViewerProps } from "./types";
+import { useI18n } from "@/context/LanguageContext";
 
 export const CSVViewer: React.FC<BaseViewerProps> = ({ content, style }) => {
+  const { t } = useI18n();
   const parseCSV = (csvContent: string) => {
     try {
       // Normalize line breaks
@@ -11,7 +13,7 @@ export const CSVViewer: React.FC<BaseViewerProps> = ({ content, style }) => {
       const rows = normalizedContent.split("\n").filter((row) => row.trim());
 
       if (rows.length === 0) {
-        throw new Error("Empty CSV content");
+        throw new Error(t("csv.empty"));
       }
 
       // Simple CSV parsing
@@ -36,13 +38,13 @@ export const CSVViewer: React.FC<BaseViewerProps> = ({ content, style }) => {
           return cells.map((c) => c.trim().replace(/^"|"$/g, ""));
         } catch (error) {
           console.error("Error parsing CSV row:", error);
-          throw new Error(`Failed to parse row: ${row}`);
+          throw new Error(t("csv.parseRowFailed", { row }));
         }
       };
 
       const headers = parseRow(rows[0]);
       if (headers.length === 0) {
-        throw new Error("No headers found in CSV");
+        throw new Error(t("csv.noHeaders"));
       }
 
       const data = rows.slice(1).map((row, index) => {
@@ -77,7 +79,7 @@ export const CSVViewer: React.FC<BaseViewerProps> = ({ content, style }) => {
       return {
         headers: [],
         data: [],
-        error: error instanceof Error ? error.message : "Failed to parse CSV",
+        error: error instanceof Error ? error.message : t("csv.parseFailed"),
       };
     }
   };
@@ -97,7 +99,7 @@ export const CSVViewer: React.FC<BaseViewerProps> = ({ content, style }) => {
             borderRadius: "4px",
           }}
         >
-          Error: {error}
+          {t("csv.errorLabel")}: {error}
         </div>
       );
     }
@@ -114,7 +116,7 @@ export const CSVViewer: React.FC<BaseViewerProps> = ({ content, style }) => {
             borderRadius: "4px",
           }}
         >
-          No valid CSV data found
+          {t("csv.noValidData")}
         </div>
       );
     }
@@ -176,18 +178,18 @@ export const CSVViewer: React.FC<BaseViewerProps> = ({ content, style }) => {
   } catch (error) {
     // Component-level error handling
     console.error("Component error:", error);
-    return (
-      <div
-        style={{
-          padding: "16px",
-          color: "#ff4d4f",
-          backgroundColor: "#fff2f0",
-          border: "1px solid #ffccc7",
-          borderRadius: "4px",
-        }}
-      >
-        An unexpected error occurred while rendering the CSV viewer
-      </div>
-    );
-  }
-};
+      return (
+        <div
+          style={{
+            padding: "16px",
+            color: "#ff4d4f",
+            backgroundColor: "#fff2f0",
+            border: "1px solid #ffccc7",
+            borderRadius: "4px",
+          }}
+        >
+          {t("csv.unexpectedError")}
+        </div>
+      );
+    }
+  };

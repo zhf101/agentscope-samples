@@ -42,6 +42,7 @@ import {
   verticalListSortingStrategy,
 } from "@dnd-kit/sortable";
 import { CSS } from "@dnd-kit/utilities";
+import { useI18n } from "@/context/LanguageContext";
 
 interface RoadmapProps {
   data?: RoadMapDataProps | null;
@@ -145,6 +146,7 @@ const Roadmap: React.FC<RoadmapProps> = ({
   editable,
   onSave = (data: RoadMapDataProps) => {},
 }) => {
+  const { t } = useI18n();
   const [isEditing, setIsEditing] = useState(false);
   const [taskValue, setTaskValue] = useState("");
   const [open, setOpen] = useState(false);
@@ -178,11 +180,10 @@ const Roadmap: React.FC<RoadmapProps> = ({
 
   const onSaveHandle = () => {
     AlertDialog.info({
-      title: "Confirm save?",
-      children:
-        "The result you edited will overwrite the original data and become the new roadmap and start execution.",
+      title: t("roadmap.confirmSaveTitle"),
+      children: t("roadmap.confirmSaveDesc"),
       centered: true,
-      okText: "Save",
+      okText: t("roadmap.save"),
       onOk: async () => {
         const newList = list.map(({ key, ...rest }) => rest);
         const newData = { subtasks: newList };
@@ -193,15 +194,15 @@ const Roadmap: React.FC<RoadmapProps> = ({
               conversationId,
               newData,
             );
-            if (response.status && response?.payload) {
-              onSave(response?.payload);
-            }
-          } catch (error) {
-            message.error("Failed to update roadmap");
+          if (response.status && response?.payload) {
+            onSave(response?.payload);
+          }
+        } catch (error) {
+            message.error(t("roadmap.updateFailed"));
             console.error("Error updating roadmap:", error);
           }
         } else {
-          message.info("No changes detected, nothing to update.");
+          message.info(t("roadmap.noChanges"));
           setIsEditing(false);
         }
         onCancel();
@@ -215,11 +216,10 @@ const Roadmap: React.FC<RoadmapProps> = ({
   };
   const deletedHandle = (key: number) => {
     AlertDialog.warning({
-      title: "Confirm deletion of this task?",
-      children:
-        "Once deleted, it cannot be recovered. Please proceed with caution.",
+      title: t("roadmap.confirmDeleteTaskTitle"),
+      children: t("roadmap.confirmDeleteTaskDesc"),
       centered: true,
-      okText: "Confirm deletion",
+      okText: t("roadmap.confirmDeleteTaskOk"),
       onOk: () => {
         setList(list.filter((item) => item.key !== key));
       },
@@ -236,7 +236,7 @@ const Roadmap: React.FC<RoadmapProps> = ({
   const onOk = () => {
     const trimmedValue = taskValue.trim();
     if (!trimmedValue) {
-      message.info("Please enter the task");
+      message.info(t("roadmap.enterTask"));
       return;
     }
     if (taskKey) {
@@ -261,14 +261,14 @@ const Roadmap: React.FC<RoadmapProps> = ({
   return (
     <div className={styles.roadmap}>
       <Flex align="center" justify="space-between">
-        <div className={styles.title}>Roadmap</div>
+        <div className={styles.title}>{t("roadmap.title")}</div>
         {editable && isEditing && (
           <Flex gap="small">
             <Button onClick={onAddTask}>
-              <SparkPlusLine /> Add Task
+              <SparkPlusLine /> {t("roadmap.addTask")}
             </Button>
             <Button type="primary" onClick={onSaveHandle}>
-              <SparkSaveLine /> Save
+              <SparkSaveLine /> {t("roadmap.save")}
             </Button>
           </Flex>
         )}
@@ -278,7 +278,7 @@ const Roadmap: React.FC<RoadmapProps> = ({
               setIsEditing(true);
             }}
           >
-            <SparkEditLine /> Edit
+            <SparkEditLine /> {t("common.edit")}
           </Button>
         )}
       </Flex>
@@ -357,8 +357,8 @@ const Roadmap: React.FC<RoadmapProps> = ({
         open={open}
         onCancel={onCancel}
         onOk={onOk}
-        okText="Sure"
-        title="Edit Task"
+        okText={t("common.confirm")}
+        title={t("roadmap.editTask")}
       >
         <Input.TextArea
           rows={Math.min(Math.max(3, taskValue.split("\n").length + 1), 20)}

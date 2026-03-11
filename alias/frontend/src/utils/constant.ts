@@ -19,11 +19,11 @@ const codeBlockRegex = /^```\n([\s\S]*?)```$/;
 const ChatModeList = [
   {
     value: ChatModeType.GENERAL,
-    label: "General",
+    labelKey: "chat.mode.general",
   },
   {
     value: ChatModeType.BROWSER,
-    label: "Browser Use",
+    labelKey: "chat.mode.browser",
   },
 ];
 export {

@@ -1,4 +1,4 @@
-import { originalPromptsList, promptJson } from "@/assets/json/prompt";
+import { getPromptsByLocale, getOriginalPromptsByLocale } from "@/assets/json/prompt";
 import { RoadMapMessage } from "@/types/roadmap";
 import { ChatModeList, ChatModeType } from "@/utils/constant";
 import { Button, Card } from "@agentscope-ai/design";
@@ -16,6 +16,7 @@ import { Col, Flex, Row } from "antd";
 import { debounce } from "lodash";
 import React, { memo, useCallback, useEffect, useMemo, useState } from "react";
 import styles from "./index.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 interface PromptsProps {
   handleSendMessage: (
     value?: string,
@@ -33,6 +34,7 @@ interface PromptsModeProps {
 }
 
 const PromptCard: React.FC<{ item: PromptsModeProps }> = ({ item }) => {
+  const { t } = useI18n();
   const [isHovered, setIsHovered] = useState(false);
   return (
     <Card
@@ -46,7 +48,7 @@ const PromptCard: React.FC<{ item: PromptsModeProps }> = ({ item }) => {
         <div className={styles.promptsDesc}>{item.describe}</div>
         {isHovered && (
           <Button type="primary" className={styles.promptsButton}>
-            Run Agent
+            {t("chat.runAgent")}
           </Button>
         )}
       </Flex>
@@ -66,15 +68,20 @@ const icons = [
 ];
 
 const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
+  const { t, locale } = useI18n();
   const fontSize = { fontSize: 18 };
   // Get corresponding prompt list from promptJson based on chatMode
   const modeSpecificPrompts = useMemo(() => {
     const currentMode = ChatModeList.find((mode) => mode.value === chatMode);
     const modeKey = currentMode?.value || ChatModeType.GENERAL;
     const promptsForMode: PromptsModeProps[] =
-      promptJson[modeKey] || promptJson[ChatModeType.GENERAL] || [];
-    return promptsForMode.length > 0 ? promptsForMode : originalPromptsList;
-  }, [chatMode]);
+      getPromptsByLocale(locale)[modeKey] ||
+      getPromptsByLocale(locale)[ChatModeType.GENERAL] ||
+      [];
+    return promptsForMode.length > 0
+      ? promptsForMode
+      : getOriginalPromptsByLocale(locale);
+  }, [chatMode, locale]);
 
   useEffect(() => {
     handleChangePrompts();
@@ -159,14 +166,14 @@ const Prompts: React.FC<PromptsProps> = ({ handleSendMessage, chatMode }) => {
   return (
     <div className={styles.prompts}>
       <Flex align="center" justify="space-between" className={styles.header}>
-        <div>Starting from these cases</div>
+        <div>{t("chat.startFromCases")}</div>
         <Flex
           gap="middle"
           onClick={handleChangePrompts}
           style={{ cursor: "pointer" }}
         >
           <SparkReplaceLine style={fontSize} />
-          Change it
+          {t("chat.changeBatch")}
         </Flex>
       </Flex>
       <Row gutter={[16, 16]}>

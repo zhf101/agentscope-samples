@@ -15,6 +15,7 @@ import {
 import { Flex } from "antd";
 import React, { memo, useMemo, useState } from "react";
 import { useLocation } from "react-router-dom";
+import { useI18n } from "@/context/LanguageContext";
 import { ClarificationMessage as ClarificationMessageComponent } from "./ClarificationMessage";
 import CollapsibleMessage from "./CollapsibleMessage";
 import { FilesMessage as FilesMessageComponent } from "./FilesMessage";
@@ -83,6 +84,7 @@ export const Message: React.FC<MessageProps> = ({
   isGenerating = false,
   messages = [],
 }) => {
+  const { t } = useI18n();
   const isUser = message.role === MessageRole.USER;
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null);
   const location = useLocation();
@@ -92,9 +94,9 @@ export const Message: React.FC<MessageProps> = ({
     return (
       <Flex gap="middle">
         <div className={styles.avatar}>
-          <img src={AssistantAvatar} alt="Assistant" />
+          <img src={AssistantAvatar} alt={t("chat.assistant")} />
         </div>
-        <div className={styles.assistantTitle}>Alias Agent</div>
+        <div className={styles.assistantTitle}>{t("chat.aliasAgent")}</div>
       </Flex>
     );
   };
@@ -125,7 +127,7 @@ export const Message: React.FC<MessageProps> = ({
     ) {
       return (
         <div className={`${styles.status} ${styles.running}`}>
-          Generating...
+          {t("chat.generating")}
         </div>
       );
     }
@@ -133,8 +135,8 @@ export const Message: React.FC<MessageProps> = ({
       <div
         className={`${styles.status} ${styles[message.status.toLowerCase()]}`}
       >
-        {message.status === MessageState.WAITING && "Waiting..."}
-        {message.status === MessageState.ERROR && "Generation failed"}
+        {message.status === MessageState.WAITING && t("chat.waiting")}
+        {message.status === MessageState.ERROR && t("chat.generationFailed")}
       </div>
     );
   };
@@ -170,7 +172,7 @@ export const Message: React.FC<MessageProps> = ({
                     ? correctCheckIcon
                     : pendingCheckIcon
                 }
-                alt="status"
+                alt={t("chat.statusLabel")}
                 className={styles.icon}
               />
               <div className={styles.content}>

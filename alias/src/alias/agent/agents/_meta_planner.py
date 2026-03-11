@@ -932,4 +932,26 @@ class MetaPlanner(AliasAgentBase):
             }
             for func_dict in self.worker_full_toolkit.get_json_schemas()
         ]
-        return full_worker_tool_list
+        meta_config = getattr(self.worker_full_toolkit, "_meta_tool_config", None)
+        if not meta_config:
+            return full_worker_tool_list
+
+        meta_names = [
+            name for name in meta_config.keys()
+            if any(item["tool_name"] == name for item in full_worker_tool_list)
+        ]
+        if not meta_names:
+            return full_worker_tool_list
+
+        meta_set = set(meta_names)
+        meta_items = [
+            item for name in meta_names
+            for item in full_worker_tool_list
+            if item["tool_name"] == name
+        ]
+        other_items = [
+            item
+            for item in full_worker_tool_list
+            if item["tool_name"] not in meta_set
+        ]
+        return meta_items + other_items

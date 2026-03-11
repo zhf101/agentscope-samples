@@ -1,12 +1,14 @@
 import React, { useEffect, memo } from "react";
 import { Result } from "@agentscope-ai/design";
 import styles from "./index.module.scss";
+import { useI18n } from "@/context/LanguageContext";
 
 interface SandBoxProps {
   sandboxUrl: string;
 }
 
 const SandBox: React.FC<SandBoxProps> = ({ sandboxUrl }) => {
+  const { t } = useI18n();
   return (
     <div className={styles.sandbox}>
       {/* <div className={styles.title}>{sandboxUrl}</div> */}
@@ -14,7 +16,7 @@ const SandBox: React.FC<SandBoxProps> = ({ sandboxUrl }) => {
         <iframe
           src={sandboxUrl}
           className={styles.sandboxIframe}
-          title="Sandbox"
+          title="Alias Sandbox"
           allowFullScreen
           frameBorder="0"
         />
@@ -22,8 +24,8 @@ const SandBox: React.FC<SandBoxProps> = ({ sandboxUrl }) => {
       {!sandboxUrl && (
         <Result
           type="error"
-          title="Error"
-          description="Please try again later"
+          title={t("sandbox.errorTitle")}
+          description={t("sandbox.errorDesc")}
         />
       )}
     </div>
